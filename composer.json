@@ -1,0 +1,40 @@
+{
+    "name": "flutterwave/laravel-package",
+    "description": "The Official Flutterwave Package for Laravel.",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "FlutterwaveLaravel\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "FlutterwaveLaravel\\Tests\\": "tests/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Flutterwave Developers",
+            "email": "developers@flutterwavego.com",
+            "homepage": "https://flutterwave.com/ng/"
+        }
+    ],
+    "require": {
+        "php": "^7.2 || ^8.0",
+        "illuminate/support": "^9.39"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+      "sort-packages": true,
+      "preferred-install": "dist",
+      "optimize-autoloader": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "require-dev": {
+        "pestphp/pest": "^1.22"
+    }
+}
