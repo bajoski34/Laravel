@@ -1,5 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
+use FlutterwaveLaravel\Tests\PackageTestCase;
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
@@ -12,6 +16,7 @@
 */
 
 // uses(Tests\TestCase::class)->in('Feature');
+uses(PackageTestCase::class)->in(__DIR__);
 
 /*
 |--------------------------------------------------------------------------
