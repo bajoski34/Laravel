@@ -1,0 +1,19 @@
+{
+  "name": "Flutterwave Laravel Package",
+  "version": "0.0.1",
+  "description": "Using the Flutterwave Laravel Package to make collections both Local/ International Payments",
+  "main": "index.js",
+  "authors": {
+    "name": "Flutterwave Developers",
+    "email": "developers@flutterwavego.com"
+  },
+  "repository": "https://github.com/bajoski34/Flutterwave-Laravel/Flutterwave Laravel Package",
+  "scripts": {
+    "dev": "vuepress dev src",
+    "build": "vuepress build src"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "vuepress": "^1.5.3"
+  }
+}
