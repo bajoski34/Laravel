@@ -1,5 +1,5 @@
 {
-    "name": "flutterwave/laravel-payment",
+    "name": "flutterwavedev/laravel-payment",
     "description": "The Official Flutterwave Package for Laravel.",
     "type": "library",
     "license": "MIT",
