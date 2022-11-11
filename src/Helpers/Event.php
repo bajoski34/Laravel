@@ -12,34 +12,31 @@ trait Event
 
     public static function onPaymentSuccess($payload): void
     {
-        Log::channel('flutterwave');
-        Log::info('Payment Success', $payload);
+        Log::channel('flutterwave')->info('Payment Success', $payload);
     }
 
     public static function onPaymentFailed($payload): void
     {
-        Log::channel('flutterwave');
-        Log::info('Payment Failed', $payload);
+
+        Log::channel('flutterwave')->info('Payment Failed', $payload);
     }
 
     public static function onPaymentPending($payload): void
     {
         Log::channel('flutterwave');
         $name = self::$name;
-        Log::info("{$name}::Payment Pending", $payload);
+        Log::channel('flutterwave')->info("{$name}::Payment Pending", $payload);
     }
 
     public static function onPaymentCancelled(string $tx_ref): \Illuminate\Http\RedirectResponse
     {
-        Log::channel('flutterwave');
         $name = self::$name;
-        Log::info("{$name}::Payment with tx_ref '{$tx_ref}' Cancelled");
+        Log::channel('flutterwave')->info("{$name}::Payment with tx_ref '{$tx_ref}' Cancelled");
         return redirect()->route('flutterwave.cancel', ['message' => 'Payment cancelled']);
     }
 
     public static function onPaymentRefunded($payload): void
     {
-        Log::channel('flutterwave');
-        Log::info('Payment Refunded', $payload);
+        Log::channel('flutterwave')->info('Payment Refunded', $payload);
     }
 }
