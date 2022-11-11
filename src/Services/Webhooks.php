@@ -5,15 +5,18 @@ declare(strict_types=1);
 namespace Flutterwave\Payments\Services;
 
 use Flutterwave\Payments\Data\Api;
+use Illuminate\Support\Facades\Log;
 
 final class Webhooks
 {
+    const SECURE_HEADER = 'verif-hash';
     private string $secret_hash;
     /**
      * @return array
      */
-    private array $hook;
+    private string $hook;
     private Api $api;
+    private \Psr\Log\LoggerInterface $logger;
 
     /**
      * Webhooks constructor.
@@ -24,16 +27,26 @@ final class Webhooks
     {
         $this->api = $api;
         $this->secret_hash = $config['secret_hash'];
+        $this->logger = Log::channel('flutterwave');
+    }
+
+    public function getHook(): array
+    {
+        return json_decode($this->hook, true)['data'];
     }
 
     /**
-     * @param array $data
+     * @param string $data
+     * @param string $signature
+     * @return bool
      */
-    public function verifySignature(array $data, string $signature): bool
+    public function verifySignature(string $data, string $signature): bool
     {
+        $this->logger->info('Flutterwave Webhook::Verifying signature from Flutterwave');
         if ($signature !== $this->secret_hash) {
             return false;
         }
+        $this->logger->info('Flutterwave Webhook::Signature Verified');
         $this->hook = $data;
         return true;
     }
@@ -53,6 +66,7 @@ final class Webhooks
      */
     private function verifyHookStructure(array $data): bool
     {
+        $this->logger->info("Flutterwave Webhook::Structure Verified for {$data['event']}");
         return isset($data['event']) && isset($data['data']) && $this->api::LATEST_VERSION === 'v3';
     }
 }

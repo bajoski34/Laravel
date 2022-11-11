@@ -5,24 +5,28 @@ declare(strict_types=1);
 namespace Flutterwave\Payments;
 
 use Exception;
+use Flutterwave\Payments\Helpers\Event;
+use Illuminate\Support\Facades\Log;
 use Flutterwave\Payments\Data\Api;
-use Flutterwave\Payments\Helpers\Modal;
+use Flutterwave\Payments\Services\Modal;
 
 class Flutterwave
 {
+    use Event;
     /**
      * @var array
      */
     private array $config;
     private Modal $modal;
-    private mixed $services;
     private Api $api;
+    private \Psr\Log\LoggerInterface $logger;
 
     /**
      * Flutterwave constructor
      */
     public function __construct()
     {
+        $this->logger = Log::channel('flutterwave');
         $this->config = [
             'public_key' => config('flutterwave.publicKey'),
             'secret_key' => config('flutterwave.secretKey'),
@@ -31,28 +35,39 @@ class Flutterwave
             'description' => config('flutterwave.description'),
             'logo' => config('flutterwave.logo'),
             'country' => config('flutterwave.country'),
+            'currency' => config('flutterwave.currency'),
+            'payment_options' => config('flutterwave.paymentType'),
+            'prefix' => config('flutterwave.transactionPrefix'),
             'env' => config('flutterwave.env'),
             'secret_hash' => config('flutterwave.secretHash'),
             'encryption_key' => config('flutterwave.encryptionKey'),
             'business_name' => config('flutterwave.businessName'),
             'success_url' => config('flutterwave.successUrl'),
             'cancel_url' => config('flutterwave.cancelUrl'),
+            'services' => config('flutterwave.services')
         ];
 
-        $this->loadServices();
-
-        $this->modal = new Modal($this->config);
+        $this->api = new Data\Api();
     }
 
     /**
      * @throws Exception
      */
-    public function initiate(array $data, string $type): string
+    public function render(string $type, array $data): string
     {
-        if ($type === 'standard') {
-            return $this->standard($data);
+
+        // check if the service is enabled
+        if(!$this->config['services']['modals']) {
+            $this->logger->notice("Flutterwave::$type service is not enabled");
+            return route('flutterwave.error', ['message' => "$type service is not enabled"]);
         }
-        return $this->inline($data);
+
+        if($type !== 'inline' && $type !== 'standard') {
+            $this->logger->notice("Flutterwave::please specify a valid type for the render method. Valid types are 'inline' and 'standard'");
+            return route('flutterwave.error', ['message' => "please specify a valid type for the render method. Valid types are 'inline' and 'standard'"]);
+        }
+
+        return $this->use('modals')->render($data, $type);
     }
 
     /**
@@ -60,11 +75,18 @@ class Flutterwave
      */
     public function use(string $service): object
     {
-        if (! isset($this->services[$service])) {
-            throw new Exception('Service not found');
+        $services = $this->config['services'];
+        if (! isset($services[$service])) {
+            $this->logger->error("Flutterwave::{$service} service not found");
+            throw new Exception('{$service} service not found');
         }
 
-        return new $this->services[$service]($this->api, $this->config);
+        return new $services[$service]($this->api, $this->config);
+    }
+
+    public function generateTransactionReference(): string
+    {
+        return $this->use('transactions')::generateTransactionReference($this->config['prefix']);
     }
 
     /**
@@ -72,33 +94,14 @@ class Flutterwave
      */
     public function verifyTransaction(string $transactionId): array
     {
-//        return (new Transactions(new Data\Api(), $this->config['secret_key']))->verify($transactionId);
         return $this->use('transactions')->verify($transactionId);
     }
 
-    private function loadServices(): void
-    {
-        $this->api = new Data\Api();
-        $this->services = require_once __DIR__ . '/Data/Services.php';
-    }
-
     /**
-     * @param array $data
-     *
      * @throws Exception
      */
-    private function inline(array $data): string
+    public function verifyTransactionReference(string $transactionId): array
     {
-        return $this->modal->getData($data);
-    }
-
-    /**
-     * @param array $data
-     *
-     * @throws Exception
-     */
-    private function standard(array $data): string
-    {
-        return $this->modal->getData($data, 'standard');
+        return $this->use('transactions')->verifyTransactionReference($transactionId);
     }
 }

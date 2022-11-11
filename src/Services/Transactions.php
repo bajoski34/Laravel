@@ -27,8 +27,8 @@ final class Transactions
         $this->base_url = $this->api::BASE_URL;
         $this->endpoint = $this->api::TRANSACTIONS_ENDPOINT;
         $this->secret_key = $config['secret_key'];
-        $this->logger = Log::channel('flutterwave');
         $this->name = self::class;
+        $this->logger = Log::channel('flutterwave');
     }
 
     public function verify(string $transactionId)
@@ -108,5 +108,16 @@ final class Transactions
         $response = Http::withToken($this->secret_key)->get($url);
 
         return $response->json();
+    }
+
+    public static function generateTransactionReference(string $prefix): string
+    {
+        $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $charactersLength = strlen($characters);
+        $randomString = '';
+        for ($i = 0; $i < 5; $i++) {
+            $randomString .= $characters[mt_rand(0, $charactersLength - 1)];
+        }
+        return $prefix.$randomString.time();
     }
 }
