@@ -158,4 +158,9 @@ final class Modal
 
         return $response->json()['data']['link'];
     }
+
+    public static function displayInline(array $data): \Illuminate\Contracts\View\View
+    {
+        return view('flutterwave::modal', compact('data'));
+    }
 }
