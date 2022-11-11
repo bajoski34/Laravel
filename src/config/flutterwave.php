@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Flutterwave\Payments\Data\Currency;
+use Flutterwave\Payments\Services\Modal;
 use Flutterwave\Payments\Services\Transactions;
 use Flutterwave\Payments\Services\Webhooks;
-use Flutterwave\Payments\Services\Modal;
 
 return [
     /*
@@ -78,7 +78,7 @@ return [
     'paymentType' => [
         'card', 'account', 'banktransfer', 'mpesa', 'mobilemoneyrwanda', 'mobilemoneyzambia',
         'mobilemoneyuganda', 'ussd', 'qr', 'mobilemoneyghana', 'credit', 'barter',
-        'payattitude', 'mobilemoneyfranco', 'mobilemoneytanzania', 'paga', '1voucher'
+        'payattitude', 'mobilemoneyfranco', 'mobilemoneytanzania', 'paga', '1voucher',
     ],
 
     /*

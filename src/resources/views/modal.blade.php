@@ -8,7 +8,7 @@
             let tx_ref = flw_detail.tx_ref;
             if (incomplete === true) {
                 // window.history.back();
-                window.location.href = `${callback_url}?cancel=cancelled`;
+                window.location.href = `${callback_url}?cancel=cancelled&tx_ref=${tx_ref}`;
             } else {
                 window.location.href = `${callback_url}?status=succesful&txref=${tx_ref}`;
             }

@@ -8,8 +8,8 @@ use Exception;
 use Flutterwave\Payments\Data\Api;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Psr\Log\LoggerInterface;
 use function json_encode;
+use Psr\Log\LoggerInterface;
 
 final class Modal
 {
@@ -22,27 +22,12 @@ final class Modal
     private string $country;
     private string $secret_hash;
     private string $env;
-    /**
-     * @var string
-     */
     private string $encryption_key;
     private Api $api;
-    /**
-     * @var string
-     */
     private string $currency;
-    /**
-     * @var string
-     */
     private string $success_url;
-    /**
-     * @var string
-     */
     private string $cancel_url;
     private string $payment_options;
-    /**
-     * @var string
-     */
     private string $business_name;
     /**
      * @var mixed
@@ -54,7 +39,7 @@ final class Modal
      *
      * @param array $config
      */
-    public function __construct( Api $api, array $config)
+    public function __construct(Api $api, array $config)
     {
         $this->logger = Log::channel('flutterwave');
         $this->publicKey = $config['public_key'] ?? null;
@@ -78,8 +63,6 @@ final class Modal
     /**
      * @param array $data
      *
-     * @return string
-     *
      * @throws Exception
      */
     public function render(array $data, string $type = 'inline'): string
@@ -92,7 +75,7 @@ final class Modal
 
         $validation = $this->validateRequest($data);
 
-        if ($validation != 'true') {
+        if ($validation !== 'true') {
             return $validation;
         }
 
@@ -137,7 +120,7 @@ final class Modal
             }
         }
 
-        return "true";
+        return 'true';
     }
 
     /**
@@ -146,15 +129,15 @@ final class Modal
     private function standardRequest(array $request): string
     {
         $specific_route = $this->api::STANDARD_ENDPOINT;
-        $this->logger->info("Flutterwave::Generated Payment Link [$specific_route]");
+        $this->logger->info("Flutterwave::Generated Payment Link [{$specific_route}]");
         $request = $this->addSettings($request);
 
         $validation = $this->validateRequest($request);
-        if ($validation != "true") {
+        if ($validation !== 'true') {
             return $validation;
         }
 
-        $response = Http::withToken($this->secretKey)->post("https://api.flutterwave.com/v3/$specific_route", $request);
+        $response = Http::withToken($this->secretKey)->post("https://api.flutterwave.com/v3/{$specific_route}", $request);
         return $response->json()['data']['link'];
     }
 }

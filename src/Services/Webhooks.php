@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 
 final class Webhooks
 {
-    const SECURE_HEADER = 'verif-hash';
+    public const SECURE_HEADER = 'verif-hash';
     private string $secret_hash;
     /**
      * @return array
@@ -35,11 +35,6 @@ final class Webhooks
         return json_decode($this->hook, true)['data'];
     }
 
-    /**
-     * @param string $data
-     * @param string $signature
-     * @return bool
-     */
     public function verifySignature(string $data, string $signature): bool
     {
         $this->logger->info('Flutterwave Webhook::Verifying signature from Flutterwave');

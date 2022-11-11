@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Flutterwave\Payments\Data;
 
-class Api
+final class Api
 {
     public const LATEST_VERSION = 'v3';
     public const BASE_URL = 'https://api.flutterwave.com/v3/';
