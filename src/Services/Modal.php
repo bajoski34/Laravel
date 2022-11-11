@@ -8,8 +8,8 @@ use Exception;
 use Flutterwave\Payments\Data\Api;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use function json_encode;
 use Psr\Log\LoggerInterface;
+use function json_encode;
 
 final class Modal
 {
@@ -30,7 +30,7 @@ final class Modal
     private string $payment_options;
     private string $business_name;
     /**
-     * @var mixed
+     * @var LoggerInterface
      */
     private LoggerInterface $logger;
 
