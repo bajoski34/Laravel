@@ -12,10 +12,15 @@ use Psr\Log\LoggerInterface;
 final class Transactions
 {
     private Api $api;
+
     private string $base_url;
+
     private $endpoint;
+
     private string $secret_key;
+
     private LoggerInterface $logger;
+
     private string $name;
 
     /**
@@ -33,9 +38,9 @@ final class Transactions
 
     public function verify(string $transactionId)
     {
-        $url = $this->base_url . $this->endpoint . $transactionId.'/verify';
+        $url = $this->base_url.$this->endpoint.$transactionId.'/verify';
 
-        $this->logger->info("{$this->name}::Verifying transaction with id: " . $transactionId);
+        $this->logger->info("{$this->name}::Verifying transaction with id: ".$transactionId);
         $response = Http::withToken($this->secret_key)->get($url);
 
         return $response->json();
@@ -43,9 +48,9 @@ final class Transactions
 
     public function verifyTransactionReference(string $tx_ref)
     {
-        $url = $this->base_url . $this->endpoint . "verify_by_reference?tx_ref={$tx_ref}";
+        $url = $this->base_url.$this->endpoint."verify_by_reference?tx_ref={$tx_ref}";
 
-        $this->logger->info("{$this->name}::Verifying transaction with reference: " . $tx_ref);
+        $this->logger->info("{$this->name}::Verifying transaction with reference: ".$tx_ref);
 
         $response = Http::withToken($this->secret_key)->get($url);
 
@@ -54,11 +59,11 @@ final class Transactions
 
     public function refund(string $transactionId, ?string $amount = null)
     {
-        $url = $this->base_url . $this->endpoint . $transactionId.'/refund';
+        $url = $this->base_url.$this->endpoint.$transactionId.'/refund';
 
         $payload = is_null($amount) ? [] : ['amount' => $amount];
 
-        $this->logger->info("{$this->name}::Refunding transaction with id: " . $transactionId);
+        $this->logger->info("{$this->name}::Refunding transaction with id: ".$transactionId);
 
         $response = Http::withToken($this->secret_key)->post($url, $payload);
 
@@ -67,7 +72,7 @@ final class Transactions
 
     public function all(?array $data = null)
     {
-        $url = $this->base_url . $this->endpoint;
+        $url = $this->base_url.$this->endpoint;
 
         $query = is_null($data) ? '' : http_build_query($data);
         $url .= '?'.$query;
@@ -79,7 +84,7 @@ final class Transactions
 
     public function fees(array $data)
     {
-        $url = $this->base_url . $this->endpoint . 'fees';
+        $url = $this->base_url.$this->endpoint.'fees';
         $query = http_build_query($data);
         $url .= $query;
         $response = Http::withToken($this->secret_key)->get($url);
@@ -89,7 +94,7 @@ final class Transactions
 
     public function resendFailedHooks(string $transactionId, int $wait = 0)
     {
-        $url = $this->base_url . $this->endpoint . $transactionId.'/resend-hooks';
+        $url = $this->base_url.$this->endpoint.$transactionId.'/resend-hooks';
 
         $payload = ['wait' => $wait];
 
@@ -103,7 +108,7 @@ final class Transactions
      */
     public function timeline(string $transactionId): array
     {
-        $url = $this->base_url . $this->endpoint . $transactionId.'/events';
+        $url = $this->base_url.$this->endpoint.$transactionId.'/events';
 
         $response = Http::withToken($this->secret_key)->get($url);
 
@@ -118,6 +123,7 @@ final class Transactions
         for ($i = 0; $i < 5; $i++) {
             $randomString .= $characters[mt_rand(0, $charactersLength - 1)];
         }
+
         return $prefix.$randomString.time();
     }
 }

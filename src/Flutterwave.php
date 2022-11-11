@@ -13,12 +13,16 @@ use Illuminate\Support\Facades\Log;
 final class Flutterwave
 {
     use Event;
+
     /**
      * @var array|null
      */
     private ?array $config;
+
     private Modal $modal;
+
     private Api $api;
+
     private \Psr\Log\LoggerInterface $logger;
 
     /**
@@ -39,11 +43,13 @@ final class Flutterwave
         // check if the service is enabled
         if (! $this->config['services']['modals']) {
             $this->logger->notice("Flutterwave::{$type} service is not enabled");
+
             return route('flutterwave.error', ['message' => "{$type} service is not enabled"]);
         }
 
         if ($type !== 'inline' && $type !== 'standard') {
             $this->logger->notice("Flutterwave::please specify a valid type for the render method. Valid types are 'inline' and 'standard'");
+
             return route('flutterwave.error', ['message' => "please specify a valid type for the render method. Valid types are 'inline' and 'standard'"]);
         }
 
@@ -106,6 +112,6 @@ final class Flutterwave
             'cancel_url' => config('flutterwave.cancelUrl'),
             'services' => config('flutterwave.services'),
         ];
-        # TODO: $this->config = config('flutterwave');
+        // TODO: $this->config = config('flutterwave');
     }
 }

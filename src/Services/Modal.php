@@ -8,27 +8,43 @@ use Exception;
 use Flutterwave\Payments\Data\Api;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Psr\Log\LoggerInterface;
 use function json_encode;
+use Psr\Log\LoggerInterface;
 
 final class Modal
 {
     private ?string $publicKey;
+
     private ?string $secretKey;
+
     private string $redirectUrl;
+
     private string $title;
+
     private string $description;
+
     private string $logo;
+
     private string $country;
+
     private string $secret_hash;
+
     private string $env;
+
     private string $encryption_key;
+
     private Api $api;
+
     private string $currency;
+
     private string $success_url;
+
     private string $cancel_url;
+
     private string $payment_options;
+
     private string $business_name;
+
     /**
      * @var LoggerInterface
      */
@@ -37,7 +53,7 @@ final class Modal
     /**
      * Modal constructor.
      *
-     * @param array $config
+     * @param  array  $config
      */
     public function __construct(Api $api, array $config)
     {
@@ -61,7 +77,7 @@ final class Modal
     }
 
     /**
-     * @param array $data
+     * @param  array  $data
      *
      * @throws Exception
      */
@@ -116,6 +132,7 @@ final class Modal
         foreach ($required as $key) {
             if (! isset($request[$key])) {
                 $this->logger->notice("Flutterwave Modal::Missing required field {$key} [standard request]");
+
                 return route('flutterwave.error', ['message' => "Missing required field {$key}"]);
             }
         }
@@ -138,6 +155,7 @@ final class Modal
         }
 
         $response = Http::withToken($this->secretKey)->post("https://api.flutterwave.com/v3/{$specific_route}", $request);
+
         return $response->json()['data']['link'];
     }
 }

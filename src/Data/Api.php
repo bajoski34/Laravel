@@ -7,11 +7,17 @@ namespace Flutterwave\Payments\Data;
 final class Api
 {
     public const LATEST_VERSION = 'v3';
+
     public const BASE_URL = 'https://api.flutterwave.com/v3/';
+
     public const STANDARD_ENDPOINT = 'payments';
+
     public const TRANSACTIONS_ENDPOINT = 'transactions/';
+
     public const CHARGE_ENDPOINT = 'charges';
+
     public const SUBACCOUNTS_ENDPOINT = 'subaccounts/';
+
     public const TRANSFERS_ENDPOINT = 'transfers/';
 
     private array $versions = [
@@ -20,6 +26,7 @@ final class Api
     ];
 
     private int $timeout = 30;
+
     private string $userAgent = 'Flutterwave-Laravel/1.0.0';
 
     public function getVersions(): array

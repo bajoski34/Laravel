@@ -8,16 +8,16 @@ final class PackageServiceProvider extends \Illuminate\Support\ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/flutterwave.php', 'flutterwave');
+        $this->mergeConfigFrom(__DIR__.'/../config/flutterwave.php', 'flutterwave');
     }
 
     public function boot(): void
     {
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'flutterwave');
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'flutterwave');
 
         // Publish config file
         $this->publishes([
-            __DIR__ . '/../config/flutterwave.php' => config_path('flutterwave.php'),
+            __DIR__.'/../config/flutterwave.php' => config_path('flutterwave.php'),
         ], 'config');
 
 //        // Publish Views

@@ -17,7 +17,6 @@ trait Event
 
     public static function onPaymentFailed($payload): void
     {
-
         Log::channel('flutterwave')->info('Payment Failed', $payload);
     }
 
@@ -32,6 +31,7 @@ trait Event
     {
         $name = self::$name;
         Log::channel('flutterwave')->info("{$name}::Payment with tx_ref '{$tx_ref}' Cancelled");
+
         return redirect()->route('flutterwave.cancel', ['message' => 'Payment cancelled']);
     }
 

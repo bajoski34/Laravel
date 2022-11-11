@@ -14,4 +14,3 @@ class PackageTestCase extends TestCase
         ];
     }
 }
-

@@ -10,18 +10,22 @@ use Illuminate\Support\Facades\Log;
 final class Webhooks
 {
     public const SECURE_HEADER = 'verif-hash';
+
     private string $secret_hash;
+
     /**
      * @return array
      */
     private string $hook;
+
     private Api $api;
+
     private \Psr\Log\LoggerInterface $logger;
 
     /**
      * Webhooks constructor.
      *
-     * @param array $config
+     * @param  array  $config
      */
     public function __construct(Api $api, array $config)
     {
@@ -43,6 +47,7 @@ final class Webhooks
         }
         $this->logger->info('Flutterwave Webhook::Signature Verified');
         $this->hook = $data;
+
         return true;
     }
 
@@ -57,11 +62,12 @@ final class Webhooks
     }
 
     /**
-     * @param array $data
+     * @param  array  $data
      */
     private function verifyHookStructure(array $data): bool
     {
         $this->logger->info("Flutterwave Webhook::Structure Verified for {$data['event']}");
+
         return isset($data['event']) && isset($data['data']) && $this->api::LATEST_VERSION === 'v3';
     }
 }
