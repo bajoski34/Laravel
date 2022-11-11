@@ -99,7 +99,7 @@ $payload = [
     "amount" => 100,
     "currency" => Currency::NGN,
     "customer" => [
-        "email" => "olaobajua@gmail.com"
+        "email" => "developers@flutterwavego.com"
     ],
 ];
 
@@ -118,6 +118,15 @@ return view('flutterwave::modal', compact('payment_details'));
 
 ## Standard Modal
 ```php
+$payload = [
+    "tx_ref" => "MC-".time(),
+    "amount" => 100,
+    "currency" => Currency::NGN,
+    "customer" => [
+        "email" => "developers@flutterwavego.com"
+    ],
+];
+
 $service = new Flutterwave\Payments\Flutterwave();
 
 if (! isset($payload['tx_ref'])) {
@@ -131,6 +140,20 @@ return redirect($payment_link);
 ```
 
 <br>
+
+## Logging
+
+To enable logging, simple add the following to your config file `config/logging.php`
+
+```php
+
+'flutterwave' => [
+    'driver' => 'single',
+    'path' => storage_path('logs/flutterwave.log'),
+    'level' => 'debug',
+],
+
+```
 
 
 
