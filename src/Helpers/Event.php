@@ -15,9 +15,11 @@ trait Event
         Log::channel('flutterwave')->info('Payment Success', $payload);
     }
 
-    public static function onPaymentFailed($payload): void
+    public static function onPaymentFailed($tx_ref): \Illuminate\Http\RedirectResponse
     {
-        Log::channel('flutterwave')->info('Payment Failed', $payload);
+        $name = self::$name;
+        Log::channel('flutterwave')->info("{$name}::Payment with tx_ref '{$tx_ref}' Cancelled");
+        return redirect()->route('flutterwave.cancel', ['message' => 'Payment Failed']);
     }
 
     public static function onPaymentPending($payload): void
