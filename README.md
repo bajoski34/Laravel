@@ -89,10 +89,10 @@ Business Settings/preferences like logo, name, payment method can be set in the 
 
 ## Usage
 
-### Render Payment Modal
+## Render Payment Modal
 There are two types of modal that can be rendered, the inline modal and the standard modal. The inline modal is rendered on your website while the standard modal is rendered on a flutterwave hosted page.
 
-## Inline Modal
+### Inline Modal
 ```php
 $payload = [
     "tx_ref" => "MC-".time(),
@@ -116,7 +116,7 @@ return view('flutterwave::modal', compact('payment_details'));
 
 ```
 
-## Standard Modal
+### Standard Modal
 ```php
 $payload = [
     "tx_ref" => "MC-".time(),
@@ -155,6 +155,7 @@ To enable logging, simple add the following to your config file `config/logging.
 
 ```
 
+##
 
 
 
