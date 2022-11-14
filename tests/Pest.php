@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use FlutterwaveLaravel\Tests\PackageTestCase;
+use Flutterwave\Payments\Tests\PackageTestCase;
 
 /*
 |--------------------------------------------------------------------------

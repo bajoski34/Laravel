@@ -1,5 +1,5 @@
 <?php
 
-test('example', function () {
-    expect(true)->toBeTrue();
-});
+use function Pest\Laravel\get;
+
+it('has a welcome page')->get('/')->assertStatus(200);
