@@ -6,9 +6,12 @@ namespace Flutterwave\Payments\Services;
 
 use Exception;
 use Flutterwave\Payments\Data\Api;
+use Flutterwave\Payments\Exception\InvalidArgument;
+use Flutterwave\Payments\Exception\NetworkConnection;
+use Flutterwave\Payments\Exception\ServiceNotFound;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use function json_encode;
 use Psr\Log\LoggerInterface;
 
 final class Modal
@@ -45,9 +48,6 @@ final class Modal
 
     private string $business_name;
 
-    /**
-     * @var LoggerInterface
-     */
     private LoggerInterface $logger;
 
     /**
@@ -77,8 +77,10 @@ final class Modal
     }
 
     /**
-     * @param  array  $data
-     *
+     * Render Inline or Standard Modal for payment
+     * @param array $data
+     * @param string $type
+     * @return string
      * @throws Exception
      */
     public function render(array $data, string $type = 'inline'): string
@@ -88,29 +90,25 @@ final class Modal
         }
 
         $data = $this->addSettings($data);
+        $this->validateRequest($data);
 
-        $validation = $this->validateRequest($data);
-
-        if ($validation !== 'true') {
-            return $validation;
-        }
-
-        return json_encode([
+        return \json_encode([
             'public_key' => $this->publicKey,
             'payment_options' => $this->payment_options,
             ...$data,
         ]);
     }
 
+    public static function displayInline(array $data): \Illuminate\Contracts\View\View
+    {
+        return view('flutterwave::modal', compact('data'));
+    }
+
     private function addSettings(array $data): array
     {
-        // check if currency is set
-        if (! isset($data['currency'])) {
-            $data['currency'] = $this->currency;
-        }
-
         return [
             ...$data,
+            'currency' => $data['currency'] ?? $this->currency,
             'redirect_url' => $data['redirect_url'] ?? $this->redirectUrl,
             'customizations' => [
                 'title' => $this->title,
@@ -120,24 +118,23 @@ final class Modal
         ];
     }
 
-    private function validateRequest(array $request): string
+    private function validateRequest(array $request): void
     {
-        $required = [
-            'tx_ref',
-            'amount',
-            'currency',
-            'redirect_url',
-        ];
+        $required = ['amount', 'customer'];
 
         foreach ($required as $key) {
             if (! isset($request[$key])) {
                 $this->logger->notice("Flutterwave Modal::Missing required field {$key} [standard request]");
-
-                return route('flutterwave.error', ['message' => "Missing required field {$key}"]);
+                throw new InvalidArgument("Missing required field {$key}");
             }
         }
+    }
 
-        return 'true';
+    private function handleResponse($response): void
+    {
+        if ($response->serverError()) {
+            throw new ServiceNotFound('This service is currently unavailable');
+        }
     }
 
     /**
@@ -145,22 +142,22 @@ final class Modal
      */
     private function standardRequest(array $request): string
     {
+        $baseUrl = $this->api::BASE_URL;
         $specific_route = $this->api::STANDARD_ENDPOINT;
+        $apiVersion = $this->api::LATEST_VERSION;
+
         $this->logger->info("Flutterwave::Generated Payment Link [{$specific_route}]");
         $request = $this->addSettings($request);
+        $this->validateRequest($request);
 
-        $validation = $this->validateRequest($request);
-        if ($validation !== 'true') {
-            return $validation;
+        try {
+            $response = Http::withToken($this->secretKey)->post("{$baseUrl}/{$apiVersion}/{$specific_route}", $request);
+        } catch(ConnectionException $e) {
+            throw new NetworkConnection('please check your network connection. Unable to connect to Flutterwave APIs.');
         }
 
-        $response = Http::withToken($this->secretKey)->post("https://api.flutterwave.com/v3/{$specific_route}", $request);
+        $this->handleResponse($response);
 
         return $response->json()['data']['link'];
-    }
-
-    public static function displayInline(array $data): \Illuminate\Contracts\View\View
-    {
-        return view('flutterwave::modal', compact('data'));
     }
 }
