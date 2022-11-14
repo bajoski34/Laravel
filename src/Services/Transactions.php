@@ -22,6 +22,7 @@ final class Transactions
     private LoggerInterface $logger;
 
     private string $name;
+    private string $api_version;
 
     /**
      * Transactions constructor.
@@ -30,15 +31,19 @@ final class Transactions
     {
         $this->api = $api;
         $this->base_url = $this->api::BASE_URL;
+        $this->api_version = $this->api::LATEST_VERSION;
         $this->endpoint = $this->api::TRANSACTIONS_ENDPOINT;
         $this->secret_key = $config['secret_key'];
         $this->name = self::class;
         $this->logger = Log::channel('flutterwave');
     }
 
-    public function verify(string $transactionId)
+    /**
+     * Verify a transaction with transactionId
+     */
+    public function verify(string $transactionId): mixed
     {
-        $url = $this->base_url.$this->endpoint.$transactionId.'/verify';
+        $url = "{$this->base_url}/{$this->api_version}/{$this->endpoint}{$transactionId}/verify";
 
         $this->logger->info("{$this->name}::Verifying transaction with id: ".$transactionId);
         $response = Http::withToken($this->secret_key)->get($url);
@@ -46,9 +51,12 @@ final class Transactions
         return $response->json();
     }
 
-    public function verifyTransactionReference(string $tx_ref)
+    /**
+     * Verify a transaction with tx_ref
+     */
+    public function verifyTransactionReference(string $tx_ref): mixed
     {
-        $url = $this->base_url.$this->endpoint."verify_by_reference?tx_ref={$tx_ref}";
+        $url = "{$this->base_url}/{$this->api_version}/{$this->endpoint}verify_by_reference?tx_ref={$tx_ref}";
 
         $this->logger->info("{$this->name}::Verifying transaction with reference: ".$tx_ref);
 
@@ -57,9 +65,12 @@ final class Transactions
         return $response->json();
     }
 
-    public function refund(string $transactionId, ?string $amount = null)
+    /**
+     * Refund a transaction
+     */
+    public function refund(string $transactionId, ?string $amount = null): mixed
     {
-        $url = $this->base_url.$this->endpoint.$transactionId.'/refund';
+        $url = "{$this->base_url}/{$this->api_version}/{$this->endpoint}{$transactionId}/refund";
 
         $payload = is_null($amount) ? [] : ['amount' => $amount];
 
@@ -70,10 +81,14 @@ final class Transactions
         return $response->json();
     }
 
-    public function all(?array $data = null)
+    /**
+     * Get all the transactions on your account. pass filters as  an array
+     *
+     * @param array|null $data
+     */
+    public function all(?array $data = null): mixed
     {
-        $url = $this->base_url.$this->endpoint;
-
+        $url = "{$this->base_url}/{$this->api_version}/{$this->endpoint}";
         $query = is_null($data) ? '' : http_build_query($data);
         $url .= '?'.$query;
 
@@ -82,9 +97,15 @@ final class Transactions
         return $response->json();
     }
 
-    public function fees(array $data)
+    /**
+     * Get transaction fee by supplying amount and currency
+     *
+     * @param array $data
+     * @return array
+     */
+    public function fees(array $data): array
     {
-        $url = $this->base_url.$this->endpoint.'fees';
+        $url = "{$this->base_url}/{$this->api_version}/{$this->endpoint}fees";
         $query = http_build_query($data);
         $url .= $query;
         $response = Http::withToken($this->secret_key)->get($url);
@@ -92,9 +113,14 @@ final class Transactions
         return $response->json();
     }
 
-    public function resendFailedHooks(string $transactionId, int $wait = 0)
+    /**
+     * Send Failed Transaction Webhooks
+     *
+     * @return array
+     */
+    public function resendFailedHooks(string $transactionId, int $wait = 0): array
     {
-        $url = $this->base_url.$this->endpoint.$transactionId.'/resend-hooks';
+        $url = "{$this->base_url}/{$this->api_version}/{$this->endpoint}{$transactionId}/resend-hooks";
 
         $payload = ['wait' => $wait];
 
@@ -104,17 +130,22 @@ final class Transactions
     }
 
     /**
+     * Get the timeline of a transaction using trasnactionId
+     *
      * @return array
      */
     public function timeline(string $transactionId): array
     {
-        $url = $this->base_url.$this->endpoint.$transactionId.'/events';
+        $url = "{$this->base_url}/{$this->api_version}/{$this->endpoint}{$transactionId}/events";
 
         $response = Http::withToken($this->secret_key)->get($url);
 
         return $response->json();
     }
 
+    /**
+     * Generates a Transaction Reference for Payment Request
+     */
     public static function generateTransactionReference(string $prefix): string
     {
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
