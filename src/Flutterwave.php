@@ -6,6 +6,8 @@ namespace Flutterwave\Payments;
 
 use Exception;
 use Flutterwave\Payments\Data\Api;
+use Flutterwave\Payments\Exception\InvalidArgument;
+use Flutterwave\Payments\Exception\ServiceNotFound;
 use Flutterwave\Payments\Helpers\Event;
 use Flutterwave\Payments\Services\Modal;
 use Illuminate\Support\Facades\Log;
@@ -43,14 +45,12 @@ final class Flutterwave
         // check if the service is enabled
         if (! $this->config['services']['modals']) {
             $this->logger->notice("Flutterwave::{$type} service is not enabled");
-
-            return route('flutterwave.error', ['message' => "{$type} service is not enabled"]);
+            throw new ServiceNotFound("{$type} service is not enabled");
         }
 
         if ($type !== 'inline' && $type !== 'standard') {
             $this->logger->notice("Flutterwave::please specify a valid type for the render method. Valid types are 'inline' and 'standard'");
-
-            return route('flutterwave.error', ['message' => "please specify a valid type for the render method. Valid types are 'inline' and 'standard'"]);
+            throw new InvalidArgument("please specify a valid type for the render method. Valid types are 'inline' and 'standard'");
         }
 
         return $this->use('modals')->render($data, $type);
@@ -64,7 +64,7 @@ final class Flutterwave
         $services = $this->config['services'];
         if (! isset($services[$service])) {
             $this->logger->error("Flutterwave::{$service} service not found");
-            throw new Exception('{$service} service not found');
+            throw new ServiceNotFound('{$service} service not found');
         }
 
         return new $services[$service]($this->api, $this->config);
