@@ -8,7 +8,7 @@ final class Api
 {
     public const LATEST_VERSION = 'v3';
 
-    public const BASE_URL = 'https://api.flutterwave.com/v3/';
+    public const BASE_URL = 'https://api.flutterwave.com';
 
     public const STANDARD_ENDPOINT = 'payments';
 
@@ -20,12 +20,13 @@ final class Api
 
     public const TRANSFERS_ENDPOINT = 'transfers/';
 
+    /* @var string[] $versions */
     private array $versions = [
         'v3' => 'v3',
         'v2' => 'v2',
     ];
 
-    private int $timeout = 30;
+    private int $timeout = 60;
 
     private string $userAgent = 'Flutterwave-Laravel/1.0.0';
 
