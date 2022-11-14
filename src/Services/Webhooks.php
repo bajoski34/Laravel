@@ -34,11 +34,17 @@ final class Webhooks
         $this->logger = Log::channel('flutterwave');
     }
 
+    /**
+     * @return array
+     */
     public function getHook(): array
     {
         return json_decode($this->hook, true)['data'];
     }
 
+    /**
+     * Verify security header in request from Flutterwave
+     */
     public function verifySignature(string $data, string $signature): bool
     {
         $this->logger->info('Flutterwave Webhook::Verifying signature from Flutterwave');
@@ -62,7 +68,9 @@ final class Webhooks
     }
 
     /**
-     * @param  array  $data
+     * Verify hook structure sent by Flutterwave
+     *
+     * @param array $data
      */
     private function verifyHookStructure(array $data): bool
     {
