@@ -6,7 +6,7 @@ namespace Flutterwave\Payments\Exception;
 
 use Exception;
 
-final class ServiceNotFoundException extends Exception
+final class ServiceNotFound extends Exception
 {
     public function render(): \Illuminate\Http\RedirectResponse
     {

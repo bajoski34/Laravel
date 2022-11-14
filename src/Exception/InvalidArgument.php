@@ -6,7 +6,7 @@ namespace Flutterwave\Payments\Exception;
 
 use InvalidArgumentException as CoreInvalidArgumentException;
 
-final class InvalidArgumentException extends CoreInvalidArgumentException
+final class InvalidArgument extends CoreInvalidArgumentException
 {
     public function report(): void
     {
