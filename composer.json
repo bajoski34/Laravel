@@ -51,5 +51,14 @@
           "Flutterwave": "Flutterwave\\Payments\\Facade"
         }
       }
-    }
+    },
+  "scripts": {
+    "test": "pest",
+    "cs": "phpcs",
+    "cs-fix": "phpcbf",
+    "insights": "phpinsights",
+    "post-autoload-dump": [
+      "@php ./vendor/bin/testbench package:discover --ansi"
+    ]
+  }
 }
