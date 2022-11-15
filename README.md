@@ -49,7 +49,7 @@ $ composer require flutterwavedev/laravel-payment
 Ensure that you publish your config file by running:
 
 ```shell
-$ php artisan vendor:publish --provider="Flutterwave\Payments\Providers\PackageServiceProvider"   
+$ php artisan vendor:publish --provider="Flutterwave\Payments\Providers\FlutterwaveServiceProvider"  
 ```
 
 
