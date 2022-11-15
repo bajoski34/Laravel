@@ -60,7 +60,6 @@ $ php artisan vendor:publish --provider="Flutterwave\Payments\Providers\Flutterw
 In your .env file add the following environment variables:
 
 ```env
-
 PUBLIC_KEY="****YOUR**PUBLIC**KEY****" // can be gotten from the dashboard
 SECRET_KEY="****YOUR**SECRET**KEY****" // can be gotten from the dashboard
 ENCRYPTION_KEY="Encryption key"
@@ -94,8 +93,11 @@ There are two types of modal that can be rendered, the inline modal and the stan
 
 ### Inline Modal
 ```php
+use Flutterwave\Payments\Facades\Flutterwave;
+use Flutterwave\Payments\Data\Currency;
+
 $payload = [
-    "tx_ref" => "MC-".time(),
+    "tx_ref" => Flutterwave::generateTransactionReference(),
     "amount" => 100,
     "currency" => Currency::NGN,
     "customer" => [
@@ -103,14 +105,7 @@ $payload = [
     ],
 ];
 
-
-$service = new Flutterwave\Payments\Flutterwave();
-
-if (! isset($payload['tx_ref'])) {
-    $payload['tx_ref'] = $service->generateTransactionReference();
-}
-
-$payment_details = $service->render('inline', $payload);
+$payment_details = Flutterwave::render('inline', $payload);
 
 return view('flutterwave::modal', compact('payment_details'));
 
@@ -118,8 +113,11 @@ return view('flutterwave::modal', compact('payment_details'));
 
 ### Standard Modal
 ```php
+use Flutterwave\Payments\Facades\Flutterwave;
+use Flutterwave\Payments\Data\Currency;
+
 $payload = [
-    "tx_ref" => "MC-".time(),
+    "tx_ref" => Flutterwave::generateTransactionReference(),
     "amount" => 100,
     "currency" => Currency::NGN,
     "customer" => [
@@ -127,16 +125,9 @@ $payload = [
     ],
 ];
 
-$service = new Flutterwave\Payments\Flutterwave();
-
-if (! isset($payload['tx_ref'])) {
-    $payload['tx_ref'] = $service->generateTransactionReference();
-}
-
-$payment_link = $service->render('standard', $payload);
+$payment_link = Flutterwave::render('standard', $payload);
 
 return redirect($payment_link);
-
 ```
 
 <br>
@@ -146,7 +137,6 @@ return redirect($payment_link);
 To enable logging, simple add the following to your config file `config/logging.php`
 
 ```php
-
 'flutterwave' => [
     'driver' => 'single',
     'path' => storage_path('logs/flutterwave.log'),
@@ -155,10 +145,62 @@ To enable logging, simple add the following to your config file `config/logging.
 
 ```
 
-##
+## Webhook Setup
 
+Create a Webhook url to receive payment notification on Payment events.
+Below is a sample of a webhook url implementation using the new package.
+```php
+use Flutterwave\Payments\Facades\Flutterwave;
+use Flutterwave\Payments\Data\Status;
 
+Route::post('flutterwave/payment/webhook', function () {
+    $method = request()->method();
+    if ($method === 'POST') {
+        //get the request body
+        $body = request()->getContent();
+        $webhook = Flutterwave::use('webhooks');
+        $transaction = Flutterwave::use('transactions');
+        //get the request signature
+        $signature = request()->header($webhook::SECURE_HEADER);
 
+        //verify the signature
+        $isVerified = $webhook->verifySignature($body, $signature);
+
+        if ($isVerified) {
+            [ 'tx_ref' => $tx_ref, 'id' => $id ] = $webhook->getHook();
+            [ 'status' => $status, 'data' => $transactionData ] = $transaction->verifyTransactionReference($tx_ref);
+
+            $responseData = ['tx_ref' => $tx_ref, 'id' => $id];
+            if ($status === 'success') {
+                switch ($transactionData['status']) {
+                    case Status::SUCCESSFUL:
+                        // do something
+                        //save to database
+                        //send email
+                        break;
+                    case Status::PENDING:
+                        // do something
+                        //save to database
+                        //send email
+                        break;
+                    case Status::FAILED:
+                        // do something
+                        //save to database
+                        //send email
+                        break;
+                }
+            }
+
+            return response()->json(['status' => 'success', 'message' => 'Webhook verified by Flutterwave Laravel Package', 'data' => $responseData]);
+        }
+
+        return response()->json(['status' => 'error', 'message' => 'Access denied. Hash invalid'])->setStatusCode(401);
+    }
+
+    // return 404
+    return abort(404);
+})->name('flutterwave.webhook');
+```
 
 ## Testing
 
