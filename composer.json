@@ -45,10 +45,10 @@
     "extra": {
       "laravel": {
         "providers": [
-          "Flutterwave\\Payments\\Providers\\PackageServiceProvider"
+          "Flutterwave\\Payments\\Providers\\FlutterwaveServiceProvider"
         ],
         "aliases": {
-          "Flutterwave": "Flutterwave\\Payments\\Facade"
+          "Flutterwave": "Flutterwave\\Payments\\Facades\\Flutterwave"
         }
       }
     },
