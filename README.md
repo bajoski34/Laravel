@@ -256,4 +256,8 @@ Copyright (c) Flutterwave Inc.
 ## Flutterwave API  References
 
 - [Flutterwave API Documentation](https://developer.flutterwave.com)
-- [Flutterwave Dashboard](https://app.flutterwave.com)  
+- [Flutterwave Dashboard](https://app.flutterwave.com) 
+
+## TODOs
+1. Add other Flutterwave Services - card,transfer,subaccount,payoutsubaccounts,plans and momo
+2. Console Commands - Webhooks, Make Payment, and Refunds.
