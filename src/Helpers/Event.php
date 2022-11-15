@@ -10,9 +10,11 @@ trait Event
 {
     private static string $name = 'Flutterwave Event';
 
-    public static function onPaymentSuccess($payload): void
+    public static function onPaymentSuccess($payload): \Illuminate\Http\RedirectResponse
     {
-        Log::channel('flutterwave')->info('Payment Success', $payload);
+        $name = self::$name;
+        Log::channel('flutterwave')->info("{$name}::Payment with id {$payload['id']} successful.");
+        return redirect()->route('flutterwave.success', ['message' => 'Payment successful']);
     }
 
     public static function onPaymentFailed($tx_ref): \Illuminate\Http\RedirectResponse
