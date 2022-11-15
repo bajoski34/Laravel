@@ -2,7 +2,7 @@
 
 namespace Flutterwave\Payments\Tests;
 
-use Flutterwave\Payments\Providers\PackageServiceProvider;
+use Flutterwave\Payments\Providers\FlutterwaveServiceProvider;
 use Orchestra\Testbench\TestCase;
 
 class PackageTestCase extends TestCase
@@ -12,7 +12,7 @@ class PackageTestCase extends TestCase
     protected function testGetPackageProviders($app): array
     {
         return [
-            PackageServiceProvider::class,
+            FlutterwaveServiceProvider::class,
         ];
     }
 }
