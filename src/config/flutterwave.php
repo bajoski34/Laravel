@@ -70,7 +70,7 @@ return [
      */
     'businessName' => env('BUSINESS_NAME', 'Flutterwave Store'),
     'transactionPrefix' => env('TRANSACTION_PREFIX', 'LARAVEL-'),
-    'logo' => env('BUSINESS_LOGO', 'https://res.cloudinary.com/decagon/image/upload/v1593642339/decagon-logo.png'),
+    'logo' => env('BUSINESS_LOGO', 'https://avatars.githubusercontent.com/u/39011309?v=4'),
     'title' => env('TITLE', 'Flutterwave Store'),
     'description' => env('DESCRIPTION', 'Flutterwave Store Description'),
     'country' => env('COUNTRY', 'NG'),
