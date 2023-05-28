@@ -1,7 +1,7 @@
 {
     "name": "flutterwavedev/laravel-payment",
     "description": "The Official Flutterwave Package for Laravel.",
-    "type": "library",
+    "type": "laravel-library",
     "license": "MIT",
     "autoload": {
         "psr-4": {
@@ -23,7 +23,8 @@
     "require": {
         "php": "^7.4 || ^8.0",
         "illuminate/support": "^v8.83 || ^9.39",
-        "ext-json": "*"
+        "ext-json": "*",
+        "composer/installers": "~1.0"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
