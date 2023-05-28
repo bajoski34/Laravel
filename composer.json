@@ -22,7 +22,7 @@
     ],
     "require": {
         "php": "^7.4 || ^8.0",
-        "illuminate/support": "^v8.83 || ^9.39",
+        "illuminate/support": "^v8.83 || ^9.39 || ^10.0",
         "ext-json": "*",
         "composer/installers": "~1.0"
     },
