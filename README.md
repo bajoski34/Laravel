@@ -43,7 +43,7 @@ The vendor folder is committed into the project to allow easy installation for t
 It is recommended to update the project dependencies using:
 
 ```shell
-$ composer require flutterwavedev/laravel-payment
+$ composer require abraham-flutterwave/laravel-payment
 ```
 
 Ensure that you publish your config file by running:
