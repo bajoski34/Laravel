@@ -33,9 +33,17 @@ final class Transactions
         $this->base_url = $this->api::BASE_URL;
         $this->api_version = $this->api::LATEST_VERSION;
         $this->endpoint = $this->api::TRANSACTIONS_ENDPOINT;
+        
+        $this->handleMissingSecretKey( $config );
         $this->secret_key = $config['secret_key'];
         $this->name = self::class;
         $this->logger = Log::channel('flutterwave');
+    }
+    
+    private function handleMissingSecretKey( $config ): void {
+        if( !isset( $config['secret_key'] )) {
+            throw new InvalidArgument('The secret key is required. please add it to the .env file.');
+        }
     }
 
     /**
