@@ -1,3 +1,5 @@
 <?php
 
-declare(strict_types=1);
+Route::get('/flw-error', function () {
+    return view( 'flutterwave::invalid');
+})->name('flutterwave.error');
