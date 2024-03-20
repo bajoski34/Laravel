@@ -4,10 +4,10 @@
 
 # Flutterwave Laravel.
 
-![Packagist Downloads](https://img.shields.io/packagist/dt/flutterwavedev/flutterwave-v3)
-![Packagist PHP Version Support](https://img.shields.io/packagist/php-v/flutterwavedev/flutterwave-v3)
-![GitHub stars](https://img.shields.io/github/stars/Flutterwave/Flutterwave-PHP-v3)
-![Packagist License](https://img.shields.io/packagist/l/flutterwavedev/flutterwave-v3)
+![Packagist Downloads](https://img.shields.io/packagist/dt/abraham-flutterwave/laravel-payment)
+![Packagist PHP Version Support](https://img.shields.io/packagist/php-v/abraham-flutterwave/laravel-payment)
+![GitHub stars](https://img.shields.io/github/stars/bajoski34/Laravel)
+![Packagist License](https://img.shields.io/packagist/l/abraham-flutterwave/laravel-payment)
 
 This Flutterwave Laravel Package provides easy access to Flutterwave for Business (F4B) v3 APIs from Laravel apps. It abstracts the complexity involved in direct integration and allows you to make quick calls to the APIs.
 
