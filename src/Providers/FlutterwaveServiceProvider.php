@@ -8,17 +8,6 @@ use Flutterwave\Payments\Flutterwave;
 
 final class FlutterwaveServiceProvider extends \Illuminate\Support\ServiceProvider
 {
-    public function register(): void
-    {
-        $this->mergeConfigFrom(__DIR__.'/../config/flutterwave.php', 'flutterwave');
-
-        $this->app->singleton('flutterwave', function() {
-            return new Flutterwave();
-        } );
-
-        $this->app->alias('flutterwave', "Flutterwave\Payments\Flutterwave");
-    }
-
     public function boot(): void
     {
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'flutterwave');
@@ -32,5 +21,16 @@ final class FlutterwaveServiceProvider extends \Illuminate\Support\ServiceProvid
 //        $this->publishes([
 //            __DIR__ . '/../resources/views' => resource_path('views/vendor/Flutterwave')
 //        ], 'flutterwave-views');
+    }
+
+    public function register(): void
+    {
+        $this->mergeConfigFrom(__DIR__.'/../config/flutterwave.php', 'flutterwave');
+
+        $this->app->singleton('flutterwave', function() {
+            return new Flutterwave();
+        } );
+
+        $this->app->alias('flutterwave', "Flutterwave\Payments\Flutterwave");
     }
 }
