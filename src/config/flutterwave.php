@@ -31,6 +31,9 @@ return [
         'modals' => Modal::class,
     ],
 
+    'paths' => [
+        'logs' => storage_path('flutterwave/log')
+    ],
     /*
      |--------------------------------------------------------------------------
      | Secret Hash [YOU CAN EDIT THIS SECTION]
