@@ -15,8 +15,8 @@ return [
      | This is where you can specify your Flutterwave API keys and other settings.
      */
 
-    'publicKey' => env('PUBLIC_KEY'),
-    'secretKey' => env('SECRET_KEY'),
+    'publicKey' => env('FLW_PUBLIC_KEY'),
+    'secretKey' => env('FLW_SECRET_KEY'),
 
     /*
      |--------------------------------------------------------------------------
@@ -42,7 +42,7 @@ return [
      | Flutterwave.
      */
 
-    'secretHash' => env('SECRET_HASH', ''),
+    'secretHash' => env('FLW_SECRET_HASH', ''),
 
     /*
      |--------------------------------------------------------------------------
@@ -52,7 +52,7 @@ return [
      | before sending them to Flutterwave.
      */
 
-    'encryptionKey' => env('ENCRYPTION_KEY', ''),
+    'encryptionKey' => env('FLW_ENCRYPTION_KEY', ''),
 
     /*
      |--------------------------------------------------------------------------
@@ -61,7 +61,7 @@ return [
      | This is where you can specify your Flutterwave API keys and other settings.
      */
 
-    'env' => env('FLUTTERWAVE_ENV', 'staging'),
+    'env' => env('FLW_ENVIRONMENT', 'staging'),
 
     /*
      |--------------------------------------------------------------------------
@@ -71,17 +71,31 @@ return [
      | set your business name, logo, country and currency defaults
      |
      */
-    'businessName' => env('BUSINESS_NAME', 'Flutterwave Store'),
-    'transactionPrefix' => env('TRANSACTION_PREFIX', 'LARAVEL-'),
-    'logo' => env('BUSINESS_LOGO', 'https://avatars.githubusercontent.com/u/39011309?v=4'),
-    'title' => env('TITLE', 'Flutterwave Store'),
-    'description' => env('DESCRIPTION', 'Flutterwave Store Description'),
-    'country' => env('COUNTRY', 'NG'),
-    'currency' => env('CURRENCY', Currency::NGN),
+    'businessName' => env('FLW_BUSINESS_NAME', 'Flutterwave Store'),
+    'transactionPrefix' => env('FLW_TRANSACTION_PREFIX', 'LARAVEL-'),
+    'logo' => env('FLW_BUSINESS_LOGO', 'https://avatars.githubusercontent.com/u/39011309?v=4'),
+    'title' => env('FLW_PAYMENT_DESCRIPTOR', 'Flutterwave Store'),
+    'description' => env('FLW_CHECKOUT_DESCRIPTION', 'Flutterwave Store Description'),
+    'country' => env('FLW_DEFAULT_COUNTRY', 'NG'),
+    'currency' => env('FLW_DEFAULT_CURRENCY', Currency::NGN),
     'paymentType' => [
-        'card', 'account', 'banktransfer', 'mpesa', 'mobilemoneyrwanda', 'mobilemoneyzambia',
-        'mobilemoneyuganda', 'ussd', 'qr', 'mobilemoneyghana', 'credit', 'barter',
-        'payattitude', 'mobilemoneyfranco', 'mobilemoneytanzania', 'paga', '1voucher',
+        'card',
+        'account',
+        'banktransfer',
+        'mpesa',
+        'mobilemoneyrwanda',
+        'mobilemoneyzambia',
+        'mobilemoneyuganda',
+        'ussd',
+        'qr',
+        'mobilemoneyghana',
+        'credit',
+        'barter',
+        'payattitude',
+        'mobilemoneyfranco',
+        'mobilemoneytanzania',
+        'paga',
+        '1voucher',
     ],
 
     /*
@@ -93,9 +107,9 @@ return [
      |
      */
 
-    'redirectUrl' => env('REDIRECT_URL', env('APP_URL').'/flutterwave/payment/callback'),
+    'redirectUrl' => env('FLW_REDIRECT_URL', env('APP_URL') . '/flutterwave/payment/callback'),
 
-    'successUrl' => env('SUCCESS_URL', env('APP_URL').'/flutterwave/payment/success'),
+    'successUrl' => env('FLW_SUCCESS_URL', env('APP_URL') . '/flutterwave/payment/success'),
 
-    'cancelUrl' => env('CANCEL_URL', env('APP_URL').'/flutterwave/payment/cancel'),
+    'cancelUrl' => env('FLW_CANCEL_URL', env('APP_URL') . '/flutterwave/payment/cancel'),
 ];

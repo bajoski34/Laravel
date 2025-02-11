@@ -60,23 +60,23 @@ $ php artisan vendor:publish --provider="Flutterwave\Payments\Providers\Flutterw
 In your .env file add the following environment variables:
 
 ```env
-PUBLIC_KEY="****YOUR**PUBLIC**KEY****" // can be gotten from the dashboard
-SECRET_KEY="****YOUR**SECRET**KEY****" // can be gotten from the dashboard
-ENCRYPTION_KEY="Encryption key"
-ENV="staging/production"
+FLW_PUBLIC_KEY="****YOUR**PUBLIC**KEY****" // can be gotten from the dashboard
+FLW_SECRET_KEY="****YOUR**SECRET**KEY****" // can be gotten from the dashboard
+FLW_ENCRYPTION_KEY="Encryption key"
+FLW_ENVIRONMENT="development"
 
 ```
 
 Business Settings/preferences like logo, name, payment method can be set in the config file `config/flutterwave.php`
 
 ```php
-'businessName' => env('BUSINESS_NAME', 'Flutterwave Store'),
-'transactionPrefix' => env('TRANSACTION_PREFIX', 'LARAVEL-'),
-'logo' => env('BUSINESS_LOGO', 'https://res.cloudinary.com/decagon/image/upload/v1593642339/decagon-logo.png'),
-'title' => env('TITLE', 'Flutterwave Store'),
-'description' => env('DESCRIPTION', 'Flutterwave Store Description'),
-'country' => env('COUNTRY', 'NG'),
-'currency' => env('CURRENCY', Currency::NGN),
+'businessName' => env('FLW_BUSINESS_NAME', 'Flutterwave Store'),
+'transactionPrefix' => env('FLW_TRANSACTION_PREFIX', 'LARAVEL-'),
+'logo' => env('FLW_BUSINESS_LOGO', 'https://avatars.githubusercontent.com/u/39011309?v=4'),
+'title' => env('FLW_PAYMENT_DESCRIPTOR', 'Flutterwave Store'),
+'description' => env('FLW_CHECKOUT_DESCRIPTION', 'Flutterwave Store Description'),
+'country' => env('FLW_DEFAULT_COUNTRY', 'NG'),
+'currency' => env('FLW_DEFAULT_CURRENCY', Currency::NGN),
 'paymentType' => [
     'card', 'account', 'banktransfer', 'mpesa', 'mobilemoneyrwanda', 'mobilemoneyzambia',
     'mobilemoneyuganda', 'ussd', 'qr', 'mobilemoneyghana', 'credit', 'barter',
