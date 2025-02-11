@@ -18,7 +18,7 @@ final class FlutterwaveServiceProvider extends \Illuminate\Support\ServiceProvid
         ], 'config');
 
         $this->publishes([
-            __DIR__.'/../routes/web.php' => base_path('routes/vendor/package/web.php'),
+            __DIR__.'/../routes/web.php' => base_path('routes/vendor/flutterwave/web.php'),
         ], 'routes');
 
         // Check if the routes file exists, and then include it
