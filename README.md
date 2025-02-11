@@ -130,6 +130,65 @@ $payment_link = Flutterwave::render('standard', $payload);
 return redirect($payment_link);
 ```
 
+These are the routes available for integrating the Flutterwave payment system. Below is a breakdown of each route and its purpose.
+
+### Checkout Route
+URL: /flutterwave/payment/checkout
+
+Method: POST
+
+Description: This route initiates the payment checkout process. The user will be required to send a POST request with the necessary payment details such as amount, currency, and email. If additional meta data is provided, it will be included in the request.
+
+#### Parameters:
+
+- amount (required): The payment amount.
+- currency (required): The currency code (e.g., USD, NGN).
+- email (required): The email address of the customer.
+- meta (optional): Any custom data related to the payment.
+Response: Returns a view (flutterwave::modal) that contains the payment details and a Flutterwave inline payment form.
+
+### Payment Callback Route
+URL: /flutterwave/payment/callback
+
+Method: GET
+
+Description: This route handles the callback from Flutterwave after a payment attempt. It verifies the transaction status using the transaction reference (tx_ref). Based on the result, it redirects the user to appropriate pages.
+
+#### Parameters:
+
+- tx_ref (required): The transaction reference ID returned by Flutterwave.
+Response:
+
+If the transaction is successful, the user is redirected to the success page (flutterwave.successful).
+If the transaction is pending, it may redirect the user to a page that will poll for the transaction's final status.
+If the transaction has failed, the user is redirected to the failure page (flutterwave.failed).
+3. Payment Success Route
+URL: /flutterwave/payment/success
+
+Method: GET
+
+Description: This route is called when a payment is successfully completed.
+
+Response: Returns a simple message, "Payment Successful".
+
+### Payment Failed Route
+URL: /flutterwave/payment/failed
+
+Method: GET
+
+Description: This route is called when a payment fails.
+
+Response: Returns a simple message, "Payment Failed".
+
+### Payment Cancelled Route
+URL: /flutterwave/payment/cancel
+
+Method: GET
+
+Description: This route is called when a payment is cancelled by the user.
+
+Response: Returns a simple message, "Payment Cancelled".
+
 <br>
 
 ## Logging
