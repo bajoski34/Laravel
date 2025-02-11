@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Flutterwave\Payments\Services;
 
 use Flutterwave\Payments\Data\Api;
+use Flutterwave\Payments\Exception\InvalidArgument;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Psr\Log\LoggerInterface;

@@ -17,10 +17,14 @@ final class FlutterwaveServiceProvider extends \Illuminate\Support\ServiceProvid
             __DIR__.'/../config/flutterwave.php' => config_path('flutterwave.php'),
         ], 'config');
 
-//        // Publish Views
-//        $this->publishes([
-//            __DIR__ . '/../resources/views' => resource_path('views/vendor/Flutterwave')
-//        ], 'flutterwave-views');
+        $this->publishes([
+            __DIR__.'/../routes/web.php' => base_path('routes/vendor/package/web.php'),
+        ], 'routes');
+
+        // Check if the routes file exists, and then include it
+        if (file_exists(base_path('routes/vendor/flutterwave/web.php'))) {
+            require base_path('routes/vendor/flutterwave/web.php');
+        }
     }
 
     public function register(): void
