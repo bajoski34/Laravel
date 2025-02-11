@@ -57,7 +57,7 @@ class PaymentRequest extends FormRequest
      */
     public function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
     {
-        if (!app()->IsProduction()) {
+        if (!app()->isProduction()) {
             Log::error('Flutterwave Validation failed in ConfirmRequest:', $validator->errors()->toArray());
         }
         parent::failedValidation($validator);
