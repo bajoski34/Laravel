@@ -57,10 +57,21 @@ class ConfirmRequest extends FormRequest
      */
     public function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
     {
+        $logger = Log::channel('flutterwave');
+        $logger->error('Flutterwave Validation failed in ConfirmRequest:', $validator->errors()->toArray());
+        // parent::failedValidation($validator); // Let Laravel handle the rest of the failed validation.
+        $errors = (new ValidationException($validator))->errors();
+
         if (!app()->isProduction()) {
-            Log::error('Flutterwave Validation failed in ConfirmRequest:', $validator->errors()->toArray());
+            throw new InvalidArgument("Flutterwave Validation failed in ConfirmRequest", $errors);
         }
 
-        parent::failedValidation($validator); // Let Laravel handle the rest of the failed validation
+        throw new HttpResponseException(response()->json(
+            [
+                'error' => $errors,
+                'status_code' => JsonResponse::HTTP_UNPROCESSABLE_ENTITY,
+            ],
+            JsonResponse::HTTP_UNPROCESSABLE_ENTITY
+        ));
     }
 }

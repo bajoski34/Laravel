@@ -42,7 +42,7 @@ final class Transactions
     }
     
     private function handleMissingSecretKey( $config ): void {
-        if( !isset( $config['secret_key'] )) {
+        if( !isset( $config['secret_key'] ) || empty( $config['secret_key'] ) ) {
             throw new InvalidArgument('The secret key is required. please add it to the .env file.');
         }
     }

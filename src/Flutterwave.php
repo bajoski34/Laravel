@@ -27,7 +27,7 @@ final class Flutterwave
 
     private \Psr\Log\LoggerInterface $logger;
 
-    const VERSION = "1.0.4";
+    const VERSION = "2.1.1";
 
     /**
      * Flutterwave constructor

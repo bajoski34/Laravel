@@ -184,6 +184,18 @@
         <h1>Error: Something Went Wrong.</h1>
         <p>Oops, something went wrong while processing the payment with Flutterwave. Please check the error details below to help you debug.</p>
 
+        @if(isset($_GET['errors']) && is_array($_GET['errors']))
+            <div class="error-details">
+                <strong>Validation Errors:</strong>
+                <ul>
+                    @foreach($_GET['errors'] as $field => $messages)
+                        @foreach((array)$messages as $message)
+                            <li><strong>{{ $field }}:</strong> {{ $message }}</li>
+                        @endforeach
+                    @endforeach
+                </ul>
+            </div>
+        @else
         <div id="stackTraceText" class="error-details">
             <strong>Error Message:</strong>
             <p>{{ $_GET['message'] ?? 'No error message available.' }}</p>
@@ -198,7 +210,7 @@
             <pre>{{ $stackTrace ?? 'No stack trace available.' }}</pre>
             <button class="copy-btn copy-btn-stacktrace" onclick="copyText('stackTraceText')">Copy Stack Trace</button>
         </div>
-
+        @endif
         <!-- System Information Section -->
         <div id="systemInfoText" class="system-info">
             <h2>System Information</h2>

@@ -6,6 +6,11 @@ namespace Flutterwave\Payments\Http;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
+use Flutterwave\Payments\Exception\InvalidArgument;
 
 class PaymentRequest extends FormRequest
 {
@@ -57,9 +62,20 @@ class PaymentRequest extends FormRequest
      */
     public function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
     {
+        $logger = Log::channel('flutterwave');
+        $logger->error('Flutterwave Validation failed in PaymentRequest:', $validator->errors()->toArray());
+        $errors = (new ValidationException($validator))->errors();
+
         if (!app()->isProduction()) {
-            Log::error('Flutterwave Validation failed in ConfirmRequest:', $validator->errors()->toArray());
+            throw new InvalidArgument("Flutterwave Validation failed in PaymentRequest", $errors);
         }
-        parent::failedValidation($validator);
+
+        throw new HttpResponseException(response()->json(
+            [
+                'error' => $errors,
+                'status_code' => JsonResponse::HTTP_UNPROCESSABLE_ENTITY,
+            ],
+            JsonResponse::HTTP_UNPROCESSABLE_ENTITY
+        ));
     }
 }
