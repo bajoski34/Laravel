@@ -135,8 +135,7 @@ These are the routes available for integrating the Flutterwave payment system. B
 ### Checkout Route
 URL: /flutterwave/payment/checkout
 
-Form-data
-Method: POST
+Method: POST (form-data)
 
 Description: This route initiates the payment checkout process. The user will be required to send a POST request with the necessary payment details such as amount, currency, and email. If additional meta data is provided, it will be included in the request.
 
