@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Flutterwave\Payments\Providers;
 
+use Flutterwave\Payments\Console\Commands\MakePaymentCommand;
+use Flutterwave\Payments\Console\Commands\RefundTransactionCommand;
+use Flutterwave\Payments\Console\Commands\VerifyWebhookCommand;
 use Flutterwave\Payments\Flutterwave;
 
 final class FlutterwaveServiceProvider extends \Illuminate\Support\ServiceProvider
@@ -24,6 +27,15 @@ final class FlutterwaveServiceProvider extends \Illuminate\Support\ServiceProvid
         // Check if the routes file exists, and then include it
         if (file_exists(base_path('routes/vendor/flutterwave/web.php'))) {
             require base_path('routes/vendor/flutterwave/web.php');
+        }
+
+        // Register commands
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                MakePaymentCommand::class,
+                VerifyWebhookCommand::class,
+                RefundTransactionCommand::class,
+            ]);
         }
     }
 
