@@ -14,6 +14,12 @@ This Flutterwave Laravel Package provides easy access to Flutterwave for Busines
 Available features include:
 
 - Collections: Card, Account, Mobile money, Bank Transfers, USSD, Barter, NQR.
+- Transfers: Bank transfers, mobile money transfers, balance management.
+- Cards: Card charging, tokenization, preauthorization, BIN lookup.
+- Subaccounts: Manage subaccounts and payout subaccounts.
+- Plans: Payment plans and subscription management.
+- Mobile Money: Comprehensive mobile money support across African countries.
+- Console Commands: Artisan commands for payments, webhooks, and refunds.
 
 ## Table of Contents
 1. [Requirements](#requirements)
@@ -87,6 +93,270 @@ Business Settings/preferences like logo, name, payment method can be set in the 
 <a id="usage"></a>
 
 ## Usage
+
+### Quick Payment Creation
+
+The simplest way to create a payment using the new helper method:
+
+```php
+use Flutterwave\Payments\Facades\Flutterwave;
+use Flutterwave\Payments\Data\Currency;
+
+// Create a quick payment
+$paymentLink = Flutterwave::createPayment(
+    amount: 1000,
+    currency: Currency::NGN,
+    email: 'customer@example.com',
+    customerName: 'John Doe',
+    customerPhone: '+2348123456789'
+);
+
+return redirect($paymentLink);
+```
+
+### Using Data Transfer Objects
+
+For better type safety and structure:
+
+```php
+use Flutterwave\Payments\Facades\Flutterwave;
+use Flutterwave\Payments\Data\DTO\Customer;
+use Flutterwave\Payments\Data\DTO\PaymentRequest;
+use Flutterwave\Payments\Data\Currency;
+
+$customer = Customer::make('customer@example.com', 'John Doe', '+2348123456789');
+$payment = PaymentRequest::make(
+    Flutterwave::generateTransactionReference(),
+    1000,
+    Currency::NGN,
+    $customer
+)->withMeta(['order_id' => '12345']);
+
+$paymentLink = Flutterwave::render('standard', $payment->toArray());
+```
+
+## Service Usage
+
+### Transfers Service
+
+Handle bank transfers and mobile money transfers:
+
+```php
+use Flutterwave\Payments\Facades\Flutterwave;
+
+$transfers = Flutterwave::transfers();
+
+// Create bank transfer
+$bankTransfer = $transfers->bank([
+    'account_bank' => '044',
+    'account_number' => '0690000040',
+    'amount' => 5000,
+    'currency' => 'NGN',
+    'beneficiary_name' => 'John Doe',
+    'reference' => 'transfer_ref_123',
+    'narration' => 'Payment for services',
+]);
+
+// Get transfer fee
+$fee = $transfers->fee([
+    'amount' => 5000,
+    'currency' => 'NGN',
+    'type' => 'account'
+]);
+
+// Check wallet balance
+$balance = $transfers->walletBalance('NGN');
+```
+
+### Cards Service
+
+Handle card operations with security features:
+
+```php
+use Flutterwave\Payments\Facades\Flutterwave;
+
+$cards = Flutterwave::cards();
+
+// Charge a card
+$charge = $cards->charge([
+    'card_number' => '5531886652142950',
+    'cvv' => '564',
+    'expiry_month' => '09',
+    'expiry_year' => '32',
+    'currency' => 'NGN',
+    'amount' => 1000,
+    'email' => 'user@example.com',
+    'tx_ref' => 'MC-3243e',
+]);
+
+// Tokenize a card for future use
+$token = $cards->tokenize([
+    'card_number' => '5531886652142950',
+    'cvv' => '564',
+    'expiry_month' => '09',
+    'expiry_year' => '32',
+    'email' => 'user@example.com',
+]);
+
+// Charge with token
+$chargeWithToken = $cards->chargeWithToken([
+    'token' => 'flw-t1nf-token',
+    'currency' => 'NGN',
+    'amount' => 1000,
+    'email' => 'user@example.com',
+    'tx_ref' => 'MC-3243e',
+]);
+
+// Get card BIN information
+$binInfo = $cards->binLookup('553188');
+```
+
+### Subaccounts Service
+
+Manage subaccounts and payout subaccounts:
+
+```php
+use Flutterwave\Payments\Facades\Flutterwave;
+
+$subaccounts = Flutterwave::subaccounts();
+
+// Create subaccount
+$subaccount = $subaccounts->create([
+    'account_bank' => '044',
+    'account_number' => '0690000040',
+    'business_name' => 'John Doe Store',
+    'business_email' => 'john@example.com',
+    'business_contact' => 'John Doe',
+    'business_contact_mobile' => '+2348123456789',
+    'business_mobile' => '+2348123456789',
+    'country' => 'NG',
+    'split_type' => 'percentage',
+    'split_value' => 0.5,
+]);
+
+// Get available banks
+$banks = $subaccounts->getBanks('NG');
+
+// Validate bank account
+$validation = $subaccounts->validateBankAccount([
+    'account_number' => '0690000040',
+    'account_bank' => '044'
+]);
+```
+
+### Plans Service
+
+Manage payment plans and subscriptions:
+
+```php
+use Flutterwave\Payments\Facades\Flutterwave;
+
+$plans = Flutterwave::plans();
+
+// Create payment plan
+$plan = $plans->create([
+    'amount' => 5000,
+    'name' => 'Monthly Subscription',
+    'interval' => 'monthly',
+    'duration' => 12,
+    'currency' => 'NGN',
+]);
+
+// Create subscription
+$subscription = $plans->subscribe([
+    'tx_ref' => 'subscription_ref_123',
+    'amount' => 5000,
+    'currency' => 'NGN',
+    'payment_plan' => $plan['data']['id'],
+    'customer' => [
+        'email' => 'customer@example.com',
+        'name' => 'John Doe',
+    ],
+]);
+
+// Generate subscription link
+$link = $plans->generateLink([
+    'tx_ref' => 'subscription_link_123',
+    'amount' => 5000,
+    'currency' => 'NGN',
+    'payment_plan' => $plan['data']['id'],
+    'customer' => [
+        'email' => 'customer@example.com',
+    ],
+]);
+```
+
+### Mobile Money Service
+
+Handle mobile money payments across African countries:
+
+```php
+use Flutterwave\Payments\Facades\Flutterwave;
+
+$mobileMoney = Flutterwave::mobileMoney();
+
+// Ghana Mobile Money
+$ghanaPayment = $mobileMoney->ghana([
+    'tx_ref' => 'momo_ref_123',
+    'amount' => 100,
+    'currency' => 'GHS',
+    'network' => 'MTN',
+    'phone_number' => '233245123456',
+    'email' => 'customer@example.com',
+]);
+
+// Kenya M-Pesa
+$mpesa = $mobileMoney->kenya([
+    'tx_ref' => 'mpesa_ref_123',
+    'amount' => 1000,
+    'currency' => 'KES',
+    'phone_number' => '254712345678',
+    'email' => 'customer@example.com',
+]);
+
+// Validate phone number for country
+$isValid = $mobileMoney->validatePhoneNumber('+233245123456', 'GH');
+
+// Format phone number
+$formatted = $mobileMoney->formatPhoneNumber('0245123456', 'GH'); // Returns: 233245123456
+
+// Get available networks
+$networks = $mobileMoney->getNetworks('GH'); // ['mtn', 'vodafone', 'airteltigo']
+```
+
+## Console Commands
+
+The package now includes Artisan commands for common operations:
+
+### Generate Payment Link
+
+```bash
+# Basic payment
+php artisan flutterwave:payment 1000 customer@example.com
+
+# With options
+php artisan flutterwave:payment 1000 customer@example.com \
+    --currency=USD \
+    --customer-name="John Doe" \
+    --customer-phone="+2348123456789" \
+    --type=inline
+```
+
+### Verify Webhook
+
+```bash
+php artisan flutterwave:verify-webhook '{"data":{"tx_ref":"test_ref"}}' "signature_hash"
+```
+
+### Refund Transaction
+
+```bash
+# Full refund
+php artisan flutterwave:refund 12345 --verify
+
+# Partial refund
+php artisan flutterwave:refund 12345 --amount=500 --verify
+```
 
 ## Render Payment Modal
 There are two types of modal that can be rendered, the inline modal and the standard modal. The inline modal is rendered on your website while the standard modal is rendered on a flutterwave hosted page.
@@ -318,5 +588,9 @@ Copyright (c) Flutterwave Inc.
 - [Flutterwave Dashboard](https://app.flutterwave.com) 
 
 ## TODOs
-1. Add other Flutterwave Services - card,transfer,subaccount,payoutsubaccounts,plans and momo
-2. Console Commands - Webhooks, Make Payment, and Refunds.
+1. ~~Add other Flutterwave Services - card,transfer,subaccount,payoutsubaccounts,plans and momo~~ ✅ **COMPLETED**
+2. ~~Console Commands - Webhooks, Make Payment, and Refunds.~~ ✅ **COMPLETED**
+3. Add comprehensive test coverage for new services
+4. Add payment link generation service
+5. Add dispute management service
+6. Add settlement management service

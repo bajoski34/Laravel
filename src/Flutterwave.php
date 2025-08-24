@@ -27,7 +27,7 @@ final class Flutterwave
 
     private \Psr\Log\LoggerInterface $logger;
 
-    const VERSION = "2.1.1";
+    const VERSION = "2.2.0";
 
     /**
      * Flutterwave constructor
@@ -91,6 +91,74 @@ final class Flutterwave
     public function verifyTransactionReference(string $transactionId): array
     {
         return $this->use('transactions')->verifyTransactionReference($transactionId);
+    }
+
+    /**
+     * Quick access to transfer service
+     * @throws Exception
+     */
+    public function transfers(): object
+    {
+        return $this->use('transfers');
+    }
+
+    /**
+     * Quick access to cards service
+     * @throws Exception
+     */
+    public function cards(): object
+    {
+        return $this->use('cards');
+    }
+
+    /**
+     * Quick access to subaccounts service
+     * @throws Exception
+     */
+    public function subaccounts(): object
+    {
+        return $this->use('subaccounts');
+    }
+
+    /**
+     * Quick access to plans service
+     * @throws Exception
+     */
+    public function plans(): object
+    {
+        return $this->use('plans');
+    }
+
+    /**
+     * Quick access to mobile money service
+     * @throws Exception
+     */
+    public function mobileMoney(): object
+    {
+        return $this->use('mobilemoney');
+    }
+
+    /**
+     * Create a quick payment request using DTO
+     */
+    public function createPayment(
+        float $amount,
+        string $currency,
+        string $email,
+        ?string $customerName = null,
+        ?string $customerPhone = null,
+        ?string $redirectUrl = null
+    ): string {
+        $customer = new \Flutterwave\Payments\Data\DTO\Customer($email, $customerName, $customerPhone);
+        $paymentRequest = new \Flutterwave\Payments\Data\DTO\PaymentRequest(
+            $this->generateTransactionReference(),
+            $amount,
+            $currency,
+            $customer,
+            $redirectUrl
+        );
+
+        return $this->render('standard', $paymentRequest->toArray());
     }
 
     private function loadConfig(): void
