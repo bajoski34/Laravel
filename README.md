@@ -1,3 +1,5 @@
+
+
 <p align="center">
     <img title="Flutterwave" height="200" src="https://flutterwave.com/images/logo/full.svg" width="50%"/>
 </p>
@@ -32,7 +34,7 @@ Available features include:
 ## Requirements
 
 1. Flutterwave for business [API Keys](https://developer.flutterwave.com/docs/integration-guides/authentication)
-2. Acceptable PHP versions: >= 7.3
+2. Acceptable PHP versions: >= 7.4
 
 
 <a id="installation"></a>
