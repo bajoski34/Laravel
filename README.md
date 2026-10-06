@@ -2,321 +2,347 @@
     <img title="Flutterwave" height="200" src="https://flutterwave.com/images/logo/full.svg" width="50%"/>
 </p>
 
-# Flutterwave Laravel.
+# Flutterwave for Laravel
 
+[![Tests](https://github.com/bajoski34/Laravel/actions/workflows/php.yml/badge.svg)](https://github.com/bajoski34/Laravel/actions/workflows/php.yml)
 ![Packagist Downloads](https://img.shields.io/packagist/dt/abraham-flutterwave/laravel-payment)
 ![Packagist PHP Version Support](https://img.shields.io/packagist/php-v/abraham-flutterwave/laravel-payment)
 ![GitHub stars](https://img.shields.io/github/stars/bajoski34/Laravel)
 ![Packagist License](https://img.shields.io/packagist/l/abraham-flutterwave/laravel-payment)
 
-This Flutterwave Laravel Package provides easy access to Flutterwave for Business (F4B) v3 APIs from Laravel apps. It abstracts the complexity involved in direct integration and allows you to make quick calls to the APIs.
+Accept payments across Africa and beyond, send payouts, bill subscriptions and react to webhooks, all from Laravel with very little code.
 
-Available features include:
+```php
+return Flutterwave::redirect(['amount' => 5000, 'email' => 'jane@example.com']);
+```
 
-- Collections: Card, Account, Mobile money, Bank Transfers, USSD, Barter, NQR.
+That one line creates a hosted checkout supporting cards, bank transfer, USSD, mobile money and more, then sends your customer to it.
 
-## Table of Contents
-1. [Requirements](#requirements)
-2. [Installation](#installation)
-3. [Initialization](#initialization)
-4. [Usage](#usage)
-5. [Testing](#testing)
-6. [Debugging Errors](#debugging-errors)
-7. [Support](#support)
-8. [Contribution guidelines](#contribution-guidelines)
-9. [License](#license)
-10. [Changelog](#changelog)
+**If this package saves you time, please ⭐ [star it on GitHub](https://github.com/bajoski34/Laravel). It helps other developers find it.**
 
-<a id="requirements"></a>
+## Features
 
-## Requirements
+| | |
+|---|---|
+| **Checkout** | Hosted payment links, inline modal, drop-in `<x-flutterwave-button>` |
+| **Verification** | `Flutterwave::isSuccessful($id, $amount, $currency)` in one call |
+| **Webhooks** | Route, signature check and Laravel events wired up for you |
+| **Transfers** | Single and bulk payouts to banks and mobile money, fees, FX rates |
+| **Stablecoins** | Send USDC, USDT and RLUSD on Solana, Ethereum, Base and Polygon; fund from fiat |
+| **Banks** | Bank lists, branches, account-name resolution |
+| **Subscriptions** | Payment plans and subscription management |
+| **Virtual accounts** | Static and dynamic account numbers for bank transfer collections |
+| **Split payments** | Subaccounts for marketplaces |
+| **Refunds** | Full and partial refunds, refund lookups |
+| **Balances & settlements** | Wallet balances and settlement history |
+| **Artisan** | `flutterwave:install`, `flutterwave:verify`, `flutterwave:banks` |
 
-1. Flutterwave for business [API Keys](https://developer.flutterwave.com/docs/integration-guides/authentication)
-2. Acceptable PHP versions: >= 7.3
-
-
-<a id="installation"></a>
+Supports **PHP 8.1+** and **Laravel 9, 10, 11, 12 and 13**.
 
 ## Installation
 
-The vendor folder is committed into the project to allow easy installation for those who do not have composer installed.
-It is recommended to update the project dependencies using:
-
 ```shell
-$ composer require abraham-flutterwave/laravel-payment
+composer require abraham-flutterwave/laravel-payment
+php artisan flutterwave:install
 ```
 
-Ensure that you publish your config file by running:
-
-```shell
-$ php artisan vendor:publish --provider="Flutterwave\Payments\Providers\FlutterwaveServiceProvider"  
-```
-
-
-<a id="initialization"></a>
-
-## Initialization
-
-In your .env file add the following environment variables:
+The install command publishes `config/flutterwave.php`, adds the keys below to your `.env`, and prints your webhook URL:
 
 ```env
-FLW_PUBLIC_KEY="****YOUR**PUBLIC**KEY****" // can be gotten from the dashboard
-FLW_SECRET_KEY="****YOUR**SECRET**KEY****" // can be gotten from the dashboard
-FLW_ENCRYPTION_KEY="Encryption key"
-FLW_ENVIRONMENT="development"
-
+FLW_PUBLIC_KEY=FLWPUBK_TEST-xxxxxxxx
+FLW_SECRET_KEY=FLWSECK_TEST-xxxxxxxx
+FLW_SECRET_HASH=any-random-string     # paste the same value into Settings > Webhooks
+FLW_ENCRYPTION_KEY=xxxxxxxx
 ```
 
-Business Settings/preferences like logo, name, payment method can be set in the config file `config/flutterwave.php`
+Get your keys from the [Flutterwave dashboard](https://app.flutterwave.com/dashboard/settings/apis). Test keys work against the sandbox automatically.
 
-```php
-'businessName' => env('FLW_BUSINESS_NAME', 'Flutterwave Store'),
-'transactionPrefix' => env('FLW_TRANSACTION_PREFIX', 'LARAVEL-'),
-'logo' => env('FLW_BUSINESS_LOGO', 'https://avatars.githubusercontent.com/u/39011309?v=4'),
-'title' => env('FLW_PAYMENT_DESCRIPTOR', 'Flutterwave Store'),
-'description' => env('FLW_CHECKOUT_DESCRIPTION', 'Flutterwave Store Description'),
-'country' => env('FLW_DEFAULT_COUNTRY', 'NG'),
-'currency' => env('FLW_DEFAULT_CURRENCY', Currency::NGN),
-'paymentType' => [
-    'card', 'account', 'banktransfer', 'mpesa', 'mobilemoneyrwanda', 'mobilemoneyzambia',
-    'mobilemoneyuganda', 'ussd', 'qr', 'mobilemoneyghana', 'credit', 'barter',
-    'payattitude', 'mobilemoneyfranco', 'mobilemoneytanzania', 'paga', '1voucher',
-],
-```
+## Accepting payments
 
-<a id="usage"></a>
+### Hosted checkout (recommended)
 
-## Usage
-
-## Render Payment Modal
-There are two types of modal that can be rendered, the inline modal and the standard modal. The inline modal is rendered on your website while the standard modal is rendered on a flutterwave hosted page.
-
-### Inline Modal
 ```php
 use Flutterwave\Payments\Facades\Flutterwave;
-use Flutterwave\Payments\Data\Currency;
 
-$payload = [
-    "tx_ref" => Flutterwave::generateTransactionReference(),
-    "amount" => 100,
-    "currency" => Currency::NGN,
-    "customer" => [
-        "email" => "developers@flutterwavego.com"
-    ],
-];
-
-$payment_details = Flutterwave::render('inline', $payload);
-
-return view('flutterwave::modal', compact('payment_details'));
-
+Route::post('/pay', function () {
+    return Flutterwave::redirect([
+        'amount' => 5000,
+        'currency' => 'NGN',            // optional, defaults to FLW_DEFAULT_CURRENCY
+        'email' => auth()->user()->email,
+        'meta' => ['order_id' => 42],   // optional, returned in webhooks
+    ]);
+});
 ```
 
-### Standard Modal
-```php
-use Flutterwave\Payments\Facades\Flutterwave;
-use Flutterwave\Payments\Data\Currency;
+Need just the URL (for an API or mobile app)? Use `Flutterwave::checkout([...])`, which returns the link. `tx_ref` is generated for you; pass your own to tie the payment to an order.
 
-$payload = [
-    "tx_ref" => Flutterwave::generateTransactionReference(),
-    "amount" => 100,
-    "currency" => Currency::NGN,
-    "customer" => [
-        "email" => "developers@flutterwavego.com"
-    ],
-];
+### Inline modal button
 
-$payment_link = Flutterwave::render('standard', $payload);
-
-return redirect($payment_link);
+```blade
+<x-flutterwave-button amount="5000" email="{{ auth()->user()->email }}" currency="NGN" class="btn btn-primary">
+    Pay ₦5,000
+</x-flutterwave-button>
 ```
 
-These are the routes available for integrating the Flutterwave payment system. Below is a breakdown of each route and its purpose.
+Supported attributes: `amount`, `email`, `currency`, `name`, `phone`, `tx-ref`, `redirect-url`, `payment-options`, `payment-plan`, `:meta`, `:customizations`, `:subaccounts`.
 
-### Checkout Route
-URL: /flutterwave/payment/checkout
+### Confirming a payment
 
-Method: POST (form-data)
-
-Description: This route initiates the payment checkout process. The user will be required to send a POST request with the necessary payment details such as amount, currency, and email. If additional meta data is provided, it will be included in the request.
-
-#### Parameters:
-
-- amount (required): The payment amount.
-- currency (required): The currency code (e.g., USD, NGN).
-- email (required): The email address of the customer.
-- meta (optional): Any custom data related to the payment.
-Response: Returns a view (flutterwave::modal) that contains the payment details and a Flutterwave inline payment form.
-
-### Payment Callback Route
-URL: /flutterwave/payment/callback
-
-Method: GET
-
-Description: This route handles the callback from Flutterwave after a payment attempt. It verifies the transaction status using the transaction reference (tx_ref). Based on the result, it redirects the user to appropriate pages.
-
-#### Parameters:
-
-- tx_ref (required): The transaction reference ID returned by Flutterwave.
-Response:
-
-If the transaction is successful, the user is redirected to the success page (flutterwave.successful).
-If the transaction is pending, it may redirect the user to a page that will poll for the transaction's final status.
-If the transaction has failed, the user is redirected to the failure page (flutterwave.failed).
-3. Payment Success Route
-URL: /flutterwave/payment/success
-
-Method: GET
-
-Description: This route is called when a payment is successfully completed.
-
-Response: Returns a simple message, "Payment Successful".
-
-### Payment Failed Route
-URL: /flutterwave/payment/failed
-
-Method: GET
-
-Description: This route is called when a payment fails.
-
-Response: Returns a simple message, "Payment Failed".
-
-### Payment Cancelled Route
-URL: /flutterwave/payment/cancel
-
-Method: GET
-
-Description: This route is called when a payment is cancelled by the user.
-
-Response: Returns a simple message, "Payment Cancelled".
-
-<br>
-
-## Logging
-
-To enable logging, simple add the following to your config file `config/logging.php`
+Flutterwave redirects the customer to `FLW_REDIRECT_URL` with `status`, `tx_ref` and `transaction_id`. Never trust those query parameters. Verify on the server instead:
 
 ```php
-'flutterwave' => [
-    'driver' => 'single',
-    'path' => storage_path('logs/flutterwave.log'),
-    'level' => 'debug',
-],
+Route::get('/flutterwave/payment/callback', function (Request $request) {
+    $order = Order::where('reference', $request->tx_ref)->firstOrFail();
 
-```
+    if ($request->transaction_id && Flutterwave::isSuccessful($request->transaction_id, $order->amount, $order->currency)) {
+        $order->markAsPaid();
 
-## Webhook Setup
-
-Create a Webhook url to receive payment notification on Payment events.
-Below is a sample of a webhook url implementation using the new package.
-```php
-use Flutterwave\Payments\Facades\Flutterwave;
-use Flutterwave\Payments\Data\Status;
-
-Route::post('flutterwave/payment/webhook', function () {
-    $method = request()->method();
-    if ($method === 'POST') {
-        //get the request body
-        $body = request()->getContent();
-        $webhook = Flutterwave::use('webhooks');
-        $transaction = Flutterwave::use('transactions');
-        //get the request signature
-        $signature = request()->header($webhook::SECURE_HEADER);
-
-        //verify the signature
-        $isVerified = $webhook->verifySignature($body, $signature);
-
-        if ($isVerified) {
-            [ 'tx_ref' => $tx_ref, 'id' => $id ] = $webhook->getHook();
-            [ 'status' => $status, 'data' => $transactionData ] = $transaction->verifyTransactionReference($tx_ref);
-
-            $responseData = ['tx_ref' => $tx_ref, 'id' => $id];
-            if ($status === 'success') {
-                switch ($transactionData['status']) {
-                    case Status::SUCCESSFUL:
-                        // do something
-                        //save to database
-                        //send email
-                        break;
-                    case Status::PENDING:
-                        // do something
-                        //save to database
-                        //send email
-                        break;
-                    case Status::FAILED:
-                        // do something
-                        //save to database
-                        //send email
-                        break;
-                }
-            }
-
-            return response()->json(['status' => 'success', 'message' => 'Webhook verified by Flutterwave Laravel Package', 'data' => $responseData]);
-        }
-
-        return response()->json(['status' => 'error', 'message' => 'Access denied. Hash invalid'])->setStatusCode(401);
+        return redirect()->route('orders.show', $order);
     }
 
-    // return 404
-    return abort(404);
-})->name('flutterwave.webhook');
+    return redirect()->route('checkout')->with('error', 'Payment was not completed.');
+});
 ```
 
-## Testing
+`isSuccessful()` returns `true` only when Flutterwave reports the transaction as successful **and** the amount and currency match what you expected.
 
-All of the SDK's tests are written with PHP's ```phpunit``` module. The tests currently test:
-```Modals```,
-```Webhooks```,
-```Transactions```,
+For the raw response, use `Flutterwave::verifyTransaction($id)` or `Flutterwave::verifyTransactionReference($txRef)`.
 
-They can be run like so:
+## Webhooks
 
-```sh
-phpunit
+Webhooks are the reliable way to learn about payments, since customers sometimes close the browser before the redirect. The package registers `POST /flutterwave/webhook` for you. It:
+
+1. rejects any request whose signature doesn't match `FLW_SECRET_HASH`,
+2. re-fetches `charge.completed` transactions from the Flutterwave API, so a forged payload can't mark an order as paid,
+3. dispatches Laravel events you can listen to.
+
+Set the URL printed by `php artisan flutterwave:install` as your webhook URL on the dashboard, then listen for events:
+
+```php
+use Flutterwave\Payments\Events\ChargeCompleted;
+use Illuminate\Support\Facades\Event;
+
+// e.g. in AppServiceProvider::boot()
+Event::listen(function (ChargeCompleted $event) {
+    if (! $event->isSuccessful()) {
+        return;
+    }
+
+    $order = Order::where('reference', $event->reference())->first();
+
+    if ($order && $event->amount() >= $order->amount && $event->currency() === $order->currency) {
+        $order->markAsPaid();
+    }
+});
 ```
 
->**NOTE:** If the test fails for creating a subaccount, just change the ```account_number``` ```account_bank```  and ```businesss_email``` to something different
+| Event | When |
+|---|---|
+| `WebhookReceived` | Every verified webhook (`$event->event`, `$event->data`, `$event->payload`) |
+| `ChargeCompleted` | A payment completed. `$event->transaction` is the API-verified transaction |
+| `TransferCompleted` | A payout succeeded or failed |
+| `SubscriptionCancelled` | A customer's subscription was cancelled |
 
->**NOTE:** The test may fail for account validation - ``` Pending OTP validation``` depending on whether the service is down or not
-<br>
+Change the path, add middleware or turn the route off under `webhook` in `config/flutterwave.php`.
 
+## Transfers (payouts)
 
-<a id="debugging errors"></a>
+```php
+// Look up the account name before sending money
+$account = Flutterwave::banks()->resolveAccount('0690000032', '044');
 
-## Debugging Errors
-We understand that you may run into some errors while integrating our library. You can read more about our error messages [here](https://developer.flutterwave.com/docs/integration-guides/errors).
+$transfer = Flutterwave::transfers()->create([
+    'account_bank' => '044',
+    'account_number' => '0690000032',
+    'amount' => 5500,
+    'currency' => 'NGN',
+    'narration' => 'Vendor payout',
+]);
 
-For `authorization` and `validation` error responses, double-check your API keys and request. If you get a `server` error, kindly engage the team for support.
+Flutterwave::transfers()->bulk([...], 'March payroll');
+Flutterwave::transfers()->fee(5500, 'NGN');
+Flutterwave::transfers()->rates(1000, 'NGN', 'USD');
+Flutterwave::transfers()->find($id);
+Flutterwave::transfers()->retry($id);
+```
 
+Don't know a bank code? Run `php artisan flutterwave:banks NG --search=access`.
 
-<a id="support"></a>
+## Stablecoins
+
+Send USDC, USDT and RLUSD to crypto wallets, or convert fiat into your stablecoin balance. This requires a live, production-approved account with [whitelisted IPs](https://flutterwave.com/ng/support/integrations/how-to-whitelist-ip-addresses-on-your-flutterwave-dashboard).
+
+```php
+use Flutterwave\Payments\Data\Stablecoin;
+
+// Check the fee first. For stablecoin-to-stablecoin sends it is deducted from the amount.
+Flutterwave::stablecoins()->fee(50, Stablecoin::USDT);
+
+// Pay from your USDC balance
+Flutterwave::stablecoins()->send(Stablecoin::POLYGON, '0xd0c7...', 50, Stablecoin::USDC);
+
+// Or convert from NGN and pay in one step (the fee is charged to your NGN balance)
+Flutterwave::stablecoins()->send(Stablecoin::SOLANA, '7EcDh...', 50, Stablecoin::USDT, 'NGN');
+
+// Top up your USDC wallet from NGN, USD, GBP, EUR or GHS (needs FLW_MERCHANT_ID)
+Flutterwave::stablecoins()->fund(100, Stablecoin::USDC, 'USD');
+
+Flutterwave::stablecoins()->balances();   // ['USDC' => [...], 'USDT' => [...]]
+Flutterwave::stablecoins()->find($transferId);
+```
+
+| Network | Coins |
+|---|---|
+| `SOLANA` | USDT, USDC |
+| `ETHEREUM` | USDT, USDC, RLUSD |
+| `BASE` | USDC |
+| `POLYGON` | USDT, USDC |
+
+Crypto transfers can't be reversed, so before calling Flutterwave, `send()` rejects coins a network doesn't support (e.g. USDT on Base), unsupported networks such as Tron, and addresses in the wrong format for the chain. You can't send USDC to a USDT address. Completed transfers fire the `TransferCompleted` event.
+
+## Subscriptions
+
+```php
+$plan = Flutterwave::plans()->create('Pro', 5000, 'monthly');
+
+// Subscribe a customer by checking out against the plan
+return Flutterwave::redirect([
+    'amount' => 5000,
+    'email' => $user->email,
+    'payment_plan' => $plan['data']['id'],
+]);
+
+Flutterwave::subscriptions()->all(['email' => $user->email]);
+Flutterwave::subscriptions()->cancel($subscriptionId);
+```
+
+## Virtual accounts
+
+```php
+$account = Flutterwave::virtualAccounts()->create([
+    'email' => $user->email,
+    'is_permanent' => true,
+    'bvn' => '12345678901',
+    'narration' => $user->name,
+]);
+
+$account['data']['account_number']; // your customer pays into this account
+```
+
+## Split payments
+
+```php
+$vendor = Flutterwave::subaccounts()->create([
+    'account_bank' => '044',
+    'account_number' => '0690000037',
+    'business_name' => 'Jane Store',
+    'business_mobile' => '09087930450',
+    'country' => 'NG',
+    'split_type' => 'percentage',
+    'split_value' => 0.1,
+]);
+
+Flutterwave::redirect([
+    'amount' => 10000,
+    'email' => 'buyer@example.com',
+    'subaccounts' => [['id' => $vendor['data']['subaccount_id']]],
+]);
+```
+
+## More
+
+```php
+Flutterwave::refund($transactionId);              // full refund
+Flutterwave::refund($transactionId, 1000);        // partial refund
+Flutterwave::refunds()->all();
+Flutterwave::balances()->currency('NGN');
+Flutterwave::settlements()->all(['page' => 1]);
+Flutterwave::beneficiaries()->create('0690000032', '044', 'Jane Doe');
+Flutterwave::transactions()->all(['status' => 'successful']);
+Flutterwave::transactions()->timeline($transactionId);
+```
+
+Every method returns Flutterwave's JSON response as an array (`status`, `message`, `data` and, for lists, `meta`).
+
+```shell
+php artisan flutterwave:verify 4975363          # by transaction id
+php artisan flutterwave:verify ORDER-42 --ref   # by tx_ref
+```
+
+## Error handling
+
+API errors throw `Flutterwave\Payments\Exception\FlutterwaveException`:
+
+```php
+use Flutterwave\Payments\Exception\FlutterwaveException;
+
+try {
+    Flutterwave::transfers()->create($payload);
+} catch (FlutterwaveException $e) {
+    $e->getMessage();     // "Insufficient wallet balance"
+    $e->getStatusCode();  // 400
+    $e->getResponse();    // full Flutterwave response body
+}
+```
+
+Network failures throw `NetworkConnection`, a subclass of `FlutterwaveException`. Read-only (GET) requests are retried automatically. Requests that move money are **never** retried, so a timeout can't cause a double payout. Tune this with `FLW_TIMEOUT` and `FLW_RETRIES`.
+
+> The `transactions()` service keeps its 2.1 behaviour of returning the error body instead of throwing, so existing code keeps working.
+
+Everything the package does is logged to `storage/logs/flutterwave.log`.
+
+## Testing your app
+
+The package uses Laravel's HTTP client, so you can fake Flutterwave in your tests:
+
+```php
+use Illuminate\Support\Facades\Http;
+
+Http::fake([
+    'api.flutterwave.com/v3/payments' => Http::response(['status' => 'success', 'data' => ['link' => 'https://checkout.test']]),
+]);
+
+$this->post('/pay')->assertRedirect('https://checkout.test');
+```
+
+To test your webhook listeners, post to `/flutterwave/webhook` with a `verif-hash` header equal to your `FLW_SECRET_HASH`.
+
+## Customising
+
+- **Branding and defaults:** set the business name, logo, currency, country and payment methods in `config/flutterwave.php`.
+- **Example routes:** run `php artisan vendor:publish --tag=flutterwave-routes` for ready-made checkout and callback routes in `routes/vendor/flutterwave/web.php`.
+- **Views:** run `php artisan vendor:publish --tag=flutterwave-views`.
+- **Swap a service:** map a key in `services`, e.g. `'transfers' => App\Payments\Transfers::class` (extend the original class), or set a key to `null` to disable that service.
+
+## Upgrading from 2.1
+
+Existing code keeps working: `render()`, `use()`, `verifyTransaction()`, `verifyTransactionReference()` and `generateTransactionReference()` are unchanged. A few things to note:
+
+- PHP 8.1+ and Laravel 9+ are now required.
+- If you published the example routes before, re-publish them with `--force` to pick up the fixed callback. They now run in the `web` middleware group, so add `@csrf` to checkout forms.
+- You can delete your hand-written webhook route and use the built-in one with events.
+
+See [CHANGELOG.md](CHANGELOG.md) for details.
+
+## Contributing
+
+Contributions are welcome! Read the [contribution guidelines](CONTRIBUTING.md), then:
+
+```shell
+composer install
+composer test
+composer format
+```
+
+Ideas for what's next: bill payments, card tokenisation and charges, payment links, and more Blade components. [Open an issue](https://github.com/bajoski34/Laravel/issues) to discuss.
 
 ## Support
-For additional assistance using this library, contact the developer experience (DX) team via [email](mailto:developers@flutterwavego.com) or on [slack](https://bit.ly/34Vkzcg).
 
-You can also follow us [@FlutterwaveEng](https://twitter.com/FlutterwaveEng) and let us know what you think 😊.
-
-
-<a id="contribution-guidelines"></a>
-
-## Contribution guidelines
-Read more about our community contribution guidelines [here](/CONTRIBUTING.md)
-
-<a id="license"></a>
+- [Flutterwave API documentation](https://developer.flutterwave.com)
+- [Flutterwave error reference](https://developer.flutterwave.com/docs/integration-guides/errors)
+- Email the developer experience team at [developers@flutterwavego.com](mailto:developers@flutterwavego.com)
+- Follow [@FlutterwaveEng](https://twitter.com/FlutterwaveEng)
 
 ## License
 
-By contributing to this library, you agree that your contributions will be licensed under its [MIT license](/LICENSE).
-
-Copyright (c) Flutterwave Inc.
-
-
-<a id="references"></a>
-
-## Flutterwave API  References
-
-- [Flutterwave API Documentation](https://developer.flutterwave.com)
-- [Flutterwave Dashboard](https://app.flutterwave.com) 
-
-## TODOs
-1. Add other Flutterwave Services - card,transfer,subaccount,payoutsubaccounts,plans and momo
-2. Console Commands - Webhooks, Make Payment, and Refunds.
+MIT. See [LICENSE](LICENSE). Copyright (c) Flutterwave Inc.

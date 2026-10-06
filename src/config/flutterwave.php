@@ -3,9 +3,6 @@
 declare(strict_types=1);
 
 use Flutterwave\Payments\Data\Currency;
-use Flutterwave\Payments\Services\Modal;
-use Flutterwave\Payments\Services\Transactions;
-use Flutterwave\Payments\Services\Webhooks;
 
 return [
     /*
@@ -22,17 +19,42 @@ return [
      |--------------------------------------------------------------------------
      | Flutterwave Services [YOU CAN EDIT THIS SECTION]
      |--------------------------------------------------------------------------
-     | This is the list of services that are available for use in the package.
-     | You can add or remove a service.
+     | Every service ships enabled. To swap one for your own class, map its
+     | key here, e.g. 'transfers' => App\Payments\MyTransfers::class.
+     | Set a key to null to disable that service.
      */
-    'services' => [
-        'transactions' => Transactions::class,
-        'webhooks' => Webhooks::class,
-        'modals' => Modal::class,
+    'services' => [],
+
+    /*
+     |--------------------------------------------------------------------------
+     | HTTP Client [YOU CAN EDIT THIS SECTION]
+     |--------------------------------------------------------------------------
+     | Request timeout in seconds, and how many times GET requests are retried
+     | when Flutterwave cannot be reached. POST requests are never retried.
+     */
+    'timeout' => (int) env('FLW_TIMEOUT', 60),
+    'retries' => (int) env('FLW_RETRIES', 2),
+
+    /*
+     |--------------------------------------------------------------------------
+     | Webhooks [YOU CAN EDIT THIS SECTION]
+     |--------------------------------------------------------------------------
+     | The package registers POST /{path} for Flutterwave webhooks, checks the
+     | signature against FLW_SECRET_HASH and dispatches Laravel events
+     | (WebhookReceived, ChargeCompleted, TransferCompleted, SubscriptionCancelled).
+     |
+     | verify_charges re-fetches every charge.completed transaction from the API
+     | before ChargeCompleted fires, so you never act on a forged payload.
+     */
+    'webhook' => [
+        'enabled' => env('FLW_WEBHOOK_ENABLED', true),
+        'path' => env('FLW_WEBHOOK_PATH', 'flutterwave/webhook'),
+        'middleware' => [],
+        'verify_charges' => true,
     ],
 
     'paths' => [
-        'logs' => storage_path('flutterwave/log')
+        'logs' => storage_path('flutterwave/log'),
     ],
     /*
      |--------------------------------------------------------------------------
@@ -71,6 +93,7 @@ return [
      | set your business name, logo, country and currency defaults
      |
      */
+    'merchantId' => env('FLW_MERCHANT_ID'),
     'businessName' => env('FLW_BUSINESS_NAME', 'Flutterwave Store'),
     'transactionPrefix' => env('FLW_TRANSACTION_PREFIX', 'LARAVEL-'),
     'logo' => env('FLW_BUSINESS_LOGO', 'https://avatars.githubusercontent.com/u/39011309?v=4'),
@@ -107,9 +130,9 @@ return [
      |
      */
 
-    'redirectUrl' => env('FLW_REDIRECT_URL', env('APP_URL') . '/flutterwave/payment/callback'),
+    'redirectUrl' => env('FLW_REDIRECT_URL', env('APP_URL').'/flutterwave/payment/callback'),
 
-    'successUrl' => env('FLW_SUCCESS_URL', env('APP_URL') . '/flutterwave/payment/success'),
+    'successUrl' => env('FLW_SUCCESS_URL', env('APP_URL').'/flutterwave/payment/success'),
 
-    'cancelUrl' => env('FLW_CANCEL_URL', env('APP_URL') . '/flutterwave/payment/cancel'),
+    'cancelUrl' => env('FLW_CANCEL_URL', env('APP_URL').'/flutterwave/payment/cancel'),
 ];

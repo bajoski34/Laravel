@@ -7,80 +7,34 @@ namespace Flutterwave\Payments\Services;
 use Exception;
 use Flutterwave\Payments\Data\Api;
 use Flutterwave\Payments\Exception\InvalidArgument;
-use Flutterwave\Payments\Exception\NetworkConnection;
-use Flutterwave\Payments\Exception\ServiceNotFound;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Http;
+use Flutterwave\Payments\Support\ApiClient;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Log;
 use Psr\Log\LoggerInterface;
 
-final class Modal
+/**
+ * Builds inline checkout configs and hosted (standard) payment links.
+ */
+class Modal
 {
-    private ?string $publicKey;
+    private const JSON_FLAGS = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR;
 
-    private ?string $secretKey;
-
-    private string $redirectUrl;
-
-    private string $title;
-
-    private string $description;
-
-    private string $logo;
-
-    private string $country;
-
-    private string $secret_hash;
-
-    private string $env;
-
-    private string $encryption_key;
+    private array $config;
 
     private Api $api;
 
-    private string $currency;
-
-    private string $success_url;
-
-    private string $cancel_url;
-
-    private string $payment_options;
-
-    private string $business_name;
-
     private LoggerInterface $logger;
 
-    /**
-     * Modal constructor.
-     *
-     * @param  array  $config
-     */
     public function __construct(Api $api, array $config)
     {
-        $this->logger = Log::channel('flutterwave');
-        $this->publicKey = $config['public_key'] ?? null;
-        $this->secretKey = $config['secret_key'] ?? null;
-        $this->redirectUrl = $config['redirect_url'];
-        $this->title = $config['title'];
-        $this->description = $config['description'];
-        $this->logo = $config['logo'];
-        $this->country = $config['country'];
-        $this->currency = $config['currency'];
-        $this->payment_options = implode(',', $config['payment_options']); //O(n)
-        $this->env = $config['env'];
-        $this->secret_hash = $config['secret_hash'];
-        $this->encryption_key = $config['encryption_key'];
-        $this->business_name = $config['business_name'];
-        $this->success_url = $config['success_url'];
-        $this->cancel_url = $config['cancel_url'];
         $this->api = $api;
+        $this->config = $config;
+        $this->logger = Log::channel('flutterwave');
     }
 
     /**
-     * Render Inline or Standard Modal for payment
-     * @param array $data
-     * @param string $type
-     * @return string
+     * Render Inline (JSON config for FlutterwaveCheckout) or Standard (hosted link).
+     *
      * @throws Exception
      */
     public function render(array $data, string $type = 'inline'): string
@@ -89,51 +43,68 @@ final class Modal
             return $this->standardRequest($data);
         }
 
-        $data = $this->addSettings($data);
-        $this->validateRequest($data);
+        if (empty($this->config['public_key'])) {
+            throw new InvalidArgument('The Flutterwave public key is missing. Add FLW_PUBLIC_KEY to your .env file.');
+        }
 
-        return \json_encode([
-            'public_key' => $this->publicKey,
-            'payment_options' => $this->payment_options,
+        $data = $this->prepare($data);
+
+        return json_encode([
+            'public_key' => $this->config['public_key'],
+            'payment_options' => $this->paymentOptions(),
             ...$data,
-        ]);
+        ], self::JSON_FLAGS);
     }
 
-    public static function displayInline(array $data): \Illuminate\Contracts\View\View
+    public static function displayInline(array $data): View
     {
         return view('flutterwave::modal', compact('data'));
     }
 
-    private function addSettings(array $data): array
+    /**
+     * Fill in defaults so callers only need an amount and an email.
+     */
+    public function prepare(array $data): array
     {
-        return [
+        if (isset($data['email']) && ! isset($data['customer'])) {
+            $data['customer'] = ['email' => $data['email']];
+        }
+        unset($data['email']);
+
+        $data = [
             ...$data,
-            'currency' => $data['currency'] ?? $this->currency,
-            'redirect_url' => $data['redirect_url'] ?? $this->redirectUrl,
-            'customizations' => [
-                'title' => $this->title,
-                'description' => $this->description,
-                'logo' => $this->logo,
-            ],
+            'tx_ref' => $data['tx_ref'] ?? Transactions::generateTransactionReference((string) ($this->config['prefix'] ?? 'LARAVEL-')),
+            'currency' => $data['currency'] ?? $this->config['currency'] ?? 'NGN',
+            'redirect_url' => $data['redirect_url'] ?? $this->config['redirect_url'] ?? null,
+            'customizations' => array_merge(array_filter([
+                'title' => $this->config['title'] ?? null,
+                'description' => $this->config['description'] ?? null,
+                'logo' => $this->config['logo'] ?? null,
+            ]), $data['customizations'] ?? []),
         ];
+
+        $this->validateRequest($data);
+
+        return $data;
+    }
+
+    private function paymentOptions(): string
+    {
+        $options = $this->config['payment_options'] ?? [];
+
+        return is_array($options) ? implode(',', $options) : (string) $options;
     }
 
     private function validateRequest(array $request): void
     {
-        $required = ['amount', 'customer'];
-
-        foreach ($required as $key) {
-            if (! isset($request[$key])) {
-                $this->logger->notice("Flutterwave Modal::Missing required field {$key} [standard request]");
-                throw new InvalidArgument("Missing required field {$key}");
-            }
+        if (! isset($request['amount']) || ! is_numeric($request['amount']) || $request['amount'] <= 0) {
+            $this->logger->notice('Flutterwave Modal::Missing or invalid amount');
+            throw new InvalidArgument('A positive "amount" is required to start a Flutterwave payment.');
         }
-    }
 
-    private function handleResponse($response): void
-    {
-        if ($response->serverError()) {
-            throw new ServiceNotFound('This service is currently unavailable');
+        if (empty($request['customer']['email'])) {
+            $this->logger->notice('Flutterwave Modal::Missing customer email');
+            throw new InvalidArgument('A customer email is required. Pass "email" or "customer" => ["email" => ...].');
         }
     }
 
@@ -142,22 +113,13 @@ final class Modal
      */
     private function standardRequest(array $request): string
     {
-        $baseUrl = $this->api::BASE_URL;
-        $specific_route = $this->api::STANDARD_ENDPOINT;
-        $apiVersion = $this->api::LATEST_VERSION;
+        $request = $this->prepare($request);
+        $request['payment_options'] ??= $this->paymentOptions();
 
-        $this->logger->info("Flutterwave::Generated Payment Link [{$specific_route}]");
-        $request = $this->addSettings($request);
-        $this->validateRequest($request);
+        $this->logger->info('Flutterwave::Generating payment link for '.$request['tx_ref']);
 
-        try {
-            $response = Http::withToken($this->secretKey)->post("{$baseUrl}/{$apiVersion}/{$specific_route}", $request);
-        } catch(ConnectionException $e) {
-            throw new NetworkConnection('please check your network connection. Unable to connect to Flutterwave APIs.');
-        }
+        $response = ApiClient::fromConfig($this->config)->post($this->api::STANDARD_ENDPOINT, $request);
 
-        $this->handleResponse($response);
-
-        return $response->json()['data']['link'];
+        return $response['data']['link'];
     }
 }

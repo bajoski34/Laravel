@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Flutterwave\Payments\Data;
 
+use Flutterwave\Payments\Flutterwave;
+
 final class Api
 {
     public const LATEST_VERSION = 'v3';
@@ -28,8 +30,6 @@ final class Api
 
     private int $timeout = 60;
 
-    private string $userAgent = 'Flutterwave-Laravel/1.0.0';
-
     public function getVersions(): array
     {
         return $this->versions;
@@ -42,6 +42,6 @@ final class Api
 
     public function getUserAgent(): string
     {
-        return $this->userAgent;
+        return 'Flutterwave-Laravel/'.Flutterwave::VERSION;
     }
 }

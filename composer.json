@@ -1,8 +1,27 @@
 {
     "name": "abraham-flutterwave/laravel-payment",
-    "description": "The Official Flutterwave Package for Laravel.",
+    "description": "The official Flutterwave package for Laravel. Accept payments, send payouts, run subscriptions and handle webhooks with Flutterwave in Laravel.",
     "type": "laravel-library",
     "license": "MIT",
+    "keywords": [
+        "laravel",
+        "flutterwave",
+        "payments",
+        "payment-gateway",
+        "africa",
+        "checkout",
+        "transfers",
+        "payouts",
+        "subscriptions",
+        "webhooks",
+        "virtual-accounts",
+        "mobile-money"
+    ],
+    "homepage": "https://github.com/bajoski34/Laravel",
+    "support": {
+        "issues": "https://github.com/bajoski34/Laravel/issues",
+        "source": "https://github.com/bajoski34/Laravel"
+    },
     "autoload": {
         "psr-4": {
             "Flutterwave\\Payments\\": "src/"
@@ -21,44 +40,44 @@
         }
     ],
     "require": {
-        "php": "^7.4 || ^8.0",
-        "illuminate/support": "^v8.83|^9.39|^10.0|^11.0 | ^12.0",
-        "ext-json": "*"
+        "php": "^8.1",
+        "ext-json": "*",
+        "illuminate/console": "^9.0|^10.0|^11.0|^12.0|^13.0",
+        "illuminate/http": "^9.0|^10.0|^11.0|^12.0|^13.0",
+        "illuminate/support": "^9.0|^10.0|^11.0|^12.0|^13.0",
+        "illuminate/view": "^9.0|^10.0|^11.0|^12.0|^13.0"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
     "config": {
-      "sort-packages": true,
-      "preferred-install": "dist",
-      "optimize-autoloader": true,
+        "sort-packages": true,
+        "preferred-install": "dist",
+        "optimize-autoloader": true,
         "allow-plugins": {
-            "pestphp/pest-plugin": true,
-            "dealerdirect/phpcodesniffer-composer-installer": true
+            "pestphp/pest-plugin": true
         }
     },
     "require-dev": {
+        "guzzlehttp/guzzle": "^7.5",
         "laravel/pint": "^1.2",
-        "nunomaduro/phpinsights": "^2.6",
-        "orchestra/testbench": "^7.11",
-        "pestphp/pest": "^1.22"
+        "orchestra/testbench": "^7.0|^8.0|^9.0|^10.0|^11.0",
+        "pestphp/pest": "^1.22|^2.0|^3.0|^4.0"
     },
     "extra": {
-      "laravel": {
-        "providers": [
-          "Flutterwave\\Payments\\Providers\\FlutterwaveServiceProvider"
-        ],
-        "aliases": {
-          "Flutterwave": "Flutterwave\\Payments\\Facades\\Flutterwave"
+        "laravel": {
+            "providers": [
+                "Flutterwave\\Payments\\Providers\\FlutterwaveServiceProvider"
+            ],
+            "aliases": {
+                "Flutterwave": "Flutterwave\\Payments\\Facades\\Flutterwave"
+            }
         }
-      }
     },
-  "scripts": {
-    "test": "pest",
-    "cs": "phpcs",
-    "cs-fix": "phpcbf",
-    "insights": "phpinsights",
-    "post-autoload-dump": [
-      "@php ./vendor/bin/testbench package:discover --ansi"
-    ]
-  }
+    "scripts": {
+        "test": "pest",
+        "format": "pint",
+        "post-autoload-dump": [
+            "@php ./vendor/bin/testbench package:discover --ansi"
+        ]
+    }
 }

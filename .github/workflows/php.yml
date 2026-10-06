@@ -1,39 +1,56 @@
-name: PHP Test
+name: Tests
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "2.x", "master", "main" ]
   pull_request:
-    branches: [ "master" ]
 
 permissions:
   contents: read
 
 jobs:
-  build:
-
+  test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { php: '8.1', laravel: '9',  testbench: '7' }
+          - { php: '8.1', laravel: '10', testbench: '8' }
+          - { php: '8.2', laravel: '11', testbench: '9' }
+          - { php: '8.3', laravel: '12', testbench: '10' }
+          - { php: '8.4', laravel: '13', testbench: '11' }
+          - { php: '8.5', laravel: '13', testbench: '11' }
+
+    name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }}
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-    - name: Validate composer.json and composer.lock
-      run: composer validate --strict
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
 
-    - name: Cache Composer packages
-      id: composer-cache
-      uses: actions/cache@v3
-      with:
-        path: vendor
-        key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-php-
+      - name: Validate composer.json
+        run: composer validate
 
-    - name: Install dependencies
-      run: composer install --prefer-dist --no-progress
+      - name: Install dependencies
+        run: |
+          composer require "illuminate/support:^${{ matrix.laravel }}.0" "illuminate/console:^${{ matrix.laravel }}.0" "illuminate/http:^${{ matrix.laravel }}.0" "illuminate/view:^${{ matrix.laravel }}.0" --no-update
+          composer require "orchestra/testbench:^${{ matrix.testbench }}.0" --dev --no-update
+          composer update --prefer-dist --no-progress --no-interaction -W
 
-    # Add a test script to composer.json, for instance: "test": "vendor/bin/phpunit"
-    # Docs: https://getcomposer.org/doc/articles/scripts.md
+      - name: Run test suite
+        run: vendor/bin/pest
 
-    - name: Run test suite
-      run: ./vendor/bin/pest
+  style:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+      - run: composer update --prefer-dist --no-progress --no-interaction
+      - run: vendor/bin/pint --test

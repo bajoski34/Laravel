@@ -4,20 +4,18 @@ declare(strict_types=1);
 
 namespace Flutterwave\Payments\Http;
 
+use Flutterwave\Payments\Exception\InvalidArgument;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Http\Response;
-use Illuminate\Http\JsonResponse;
-use Flutterwave\Payments\Exception\InvalidArgument;
 
 class PaymentRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool
      */
     public function authorize(): bool
     {
@@ -57,17 +55,15 @@ class PaymentRequest extends FormRequest
 
     /**
      * Configure the validation to throw exceptions when validation fails.
-     *
-     * @return bool
      */
-    public function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
+    protected function failedValidation(Validator $validator): void
     {
         $logger = Log::channel('flutterwave');
         $logger->error('Flutterwave Validation failed in PaymentRequest:', $validator->errors()->toArray());
         $errors = (new ValidationException($validator))->errors();
 
-        if (!app()->isProduction()) {
-            throw new InvalidArgument("Flutterwave Validation failed in PaymentRequest", $errors);
+        if (! app()->isProduction()) {
+            throw new InvalidArgument('Flutterwave Validation failed in PaymentRequest: '.json_encode($errors));
         }
 
         throw new HttpResponseException(response()->json(
