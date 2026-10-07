@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 class VerifyTransactionCommand extends Command
 {
     protected $signature = 'flutterwave:verify
-        {reference : Transaction id, or tx_ref when --ref is passed}
+        {reference : Transaction id, or tx_ref when the ref option is set}
         {--ref : Treat the argument as a tx_ref}';
 
     protected $description = 'Look up the status of a Flutterwave transaction';
