@@ -227,6 +227,7 @@ const faqs = [
         <div class="hero__actions">
           <a class="btn btn--primary" :href="withBase('/guide/getting-started')">Get started</a>
           <a class="btn btn--on-dark" :href="withBase('/reference/services')">Browse the API</a>
+          <a class="btn btn--on-dark" :href="withBase('/downloads/flutterwave-laravel-guide.pdf')" download>Download the PDF guide</a>
         </div>
       </div>
     </section>

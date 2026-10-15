@@ -1,6 +1,14 @@
+<script setup>
+import { withBase } from 'vitepress'
+</script>
+
 # Getting started
 
 The package gives your Laravel app the whole Flutterwave v3 API behind one facade, plus a webhook route, Laravel events, artisan commands and frontend components.
+
+::: tip Prefer a printable checklist?
+The developer quickstart covers install, setup, a test payment, going live and troubleshooting in one document. <a :href="withBase('/downloads/flutterwave-laravel-guide.pdf')" download>Download the PDF</a> (16 pages, A4) or <a :href="withBase('/downloads/flutterwave-laravel-guide.html')" target="_blank" rel="noopener">open it in your browser</a>.
+:::
 
 ## Requirements
 

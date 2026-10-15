@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flutterwave for Laravel: Developer Quickstart · Flutterwave</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFF8F0;
+    --ink:#221A38;
+    --ink-soft:#5A5270;
+    --flame:#FF5A1F;
+    --gold:#FFB000;
+    --mint:#0E9F6E;
+    --mint-soft:#E3F6EE;
+    --panel:#FFFFFF;
+    --lilac:#F2EDFF;
+    --line:#EADFCF;
+    --rail:220px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:24px}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Instrument Sans',system-ui,sans-serif;
+    font-size:16.5px;
+    line-height:1.62;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+  /* ---------- masthead ---------- */
+  header{padding:44px 0 0}
+  .kicker{
+    font-family:'Space Mono',monospace;
+    font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--flame);
+  }
+  h1.mast{
+    font-family:'Bricolage Grotesque',sans-serif;
+    font-weight:800;
+    font-size:clamp(38px,6.4vw,62px);
+    line-height:1;
+    letter-spacing:-.02em;
+    margin:12px 0 8px;
+    max-width:18ch;
+  }
+  h1.mast .tilde{color:var(--flame)}
+  .dek{max-width:60ch;color:var(--ink-soft);font-size:18px}
+  .issue-line{
+    display:flex;flex-wrap:wrap;gap:8px 24px;align-items:baseline;
+    margin-top:22px;padding-bottom:16px;border-bottom:3px solid var(--ink);
+    font-family:'Space Mono',monospace;font-size:12.5px;letter-spacing:.06em;
+  }
+  .issue-line b{color:var(--flame)}
+
+  /* ---------- fact strip ---------- */
+  .facts{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+    gap:1px;background:var(--line);border:1px solid var(--line);
+    border-radius:14px;overflow:hidden;margin-top:26px;
+  }
+  .facts div{background:var(--panel);padding:14px 16px}
+  .facts dt{
+    font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--ink-soft);
+  }
+  .facts dd{font-weight:600;font-size:15px;margin-top:3px;word-break:break-word}
+
+  /* ---------- layout shell ---------- */
+  .shell{display:grid;grid-template-columns:var(--rail) 1fr;gap:44px;align-items:start;margin-top:12px}
+  @media(max-width:860px){
+    .shell{grid-template-columns:1fr;gap:0}
+  }
+
+  /* ---------- nav spine ---------- */
+  .rail{position:sticky;top:24px;padding:36px 0 24px}
+  @media(max-width:860px){
+    .rail{position:static;padding:26px 0 0}
+  }
+  .rail .eyebrow{margin-bottom:14px}
+  .spine{list-style:none;border-left:2px solid var(--line);margin-left:7px}
+  .spine li{position:relative}
+  .spine a{
+    display:block;padding:7px 0 7px 24px;text-decoration:none;
+    color:var(--ink-soft);font-size:14.5px;line-height:1.35;
+    border-radius:0 8px 8px 0;
+  }
+  .spine a::before{
+    content:"";position:absolute;left:-7px;top:14px;width:12px;height:12px;
+    border-radius:50%;background:var(--line);border:3px solid var(--paper);
+    transition:background .18s ease,transform .18s ease;
+  }
+  .spine a:hover{color:var(--ink)}
+  .spine a:hover::before{background:var(--gold)}
+  .spine a.on{color:var(--ink);font-weight:600}
+  .spine a.on::before{background:var(--flame);transform:scale(1.18)}
+  .spine .sub a{font-size:13.5px;padding-left:24px;opacity:.85}
+
+  /* ---------- sections ---------- */
+  main{min-width:0}
+  section{padding:38px 0 6px;scroll-margin-top:20px}
+  .eyebrow{
+    font-family:'Space Mono',monospace;font-size:11.5px;
+    letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft);
+    display:flex;align-items:center;gap:12px;margin-bottom:16px;
+  }
+  .eyebrow::after{content:"";flex:1;height:1px;background:var(--line)}
+  h2{
+    font-family:'Bricolage Grotesque',sans-serif;font-weight:800;
+    font-size:clamp(24px,3.6vw,32px);letter-spacing:-.01em;
+    line-height:1.12;margin-bottom:12px;
+  }
+  h3{font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:19px;margin-bottom:6px}
+  .lede{color:var(--ink-soft);max-width:62ch;margin-bottom:22px}
+  p{max-width:66ch}
+  section > p{margin-bottom:14px}
+
+  /* ---------- checklist ---------- */
+  .check{list-style:none;display:grid;gap:10px}
+  .check li{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:14px 16px;display:grid;grid-template-columns:22px 1fr;gap:12px;align-items:start;
+  }
+  .check input{
+    appearance:none;width:20px;height:20px;border:2px solid var(--line);
+    border-radius:6px;cursor:pointer;position:relative;margin-top:2px;background:var(--paper);
+  }
+  .check input:checked{background:var(--mint);border-color:var(--mint)}
+  .check input:checked::after{
+    content:"";position:absolute;left:5.5px;top:1.5px;width:5px;height:10px;
+    border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(42deg);
+  }
+  .check b{font-weight:600}
+  .check em{display:block;font-style:normal;color:var(--ink-soft);font-size:14.5px;margin-top:2px}
+  .check li:has(input:checked) b{opacity:.55;text-decoration:line-through}
+
+  /* ---------- steps ---------- */
+  .steps{display:grid;gap:14px;counter-reset:step}
+  .steps > article{
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    padding:20px 22px;display:grid;grid-template-columns:38px 1fr;gap:16px;
+  }
+  .steps > article::before{
+    counter-increment:step;content:counter(step);
+    font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:26px;
+    line-height:1;color:var(--flame);
+  }
+  .steps p{color:var(--ink-soft);font-size:15.5px}
+  .steps .body > * + *{margin-top:8px}
+
+  /* path: where to click */
+  .path{
+    font-family:'Space Mono',monospace;font-size:12.5px;
+    background:var(--lilac);border-radius:8px;padding:3px 9px;
+    color:#4B3AA6;white-space:nowrap;
+  }
+  kbd{
+    font-family:'Space Mono',monospace;font-size:12.5px;background:var(--panel);
+    border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:2px 7px;
+  }
+
+  /* ---------- tabs ---------- */
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+  .tabs button{
+    font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.08em;
+    text-transform:uppercase;cursor:pointer;
+    background:var(--panel);border:1px solid var(--line);border-radius:99px;
+    padding:9px 16px;color:var(--ink-soft);
+  }
+  .tabs button[aria-selected="true"]{
+    background:var(--ink);border-color:var(--ink);color:var(--paper);
+  }
+  .panel[hidden]{display:none}
+  .panel .hint{
+    font-size:14.5px;color:var(--ink-soft);margin-bottom:14px;
+    padding-left:14px;border-left:3px solid var(--gold);
+  }
+
+  /* ---------- code ---------- */
+  .code{position:relative;margin:10px 0}
+  .code pre{
+    background:var(--ink);color:#F3EDE4;border-radius:12px;
+    padding:16px 60px 16px 18px;overflow-x:auto;
+    font-family:'Space Mono',monospace;font-size:13px;line-height:1.6;
+  }
+  .code .cp{
+    position:absolute;top:10px;right:10px;cursor:pointer;
+    font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.1em;
+    text-transform:uppercase;background:rgba(255,255,255,.12);color:#F3EDE4;
+    border:1px solid rgba(255,255,255,.22);border-radius:7px;padding:5px 10px;
+  }
+  .code .cp:hover{background:rgba(255,90,31,.9);border-color:transparent}
+  .code .cp.done{background:var(--mint);border-color:transparent}
+
+  /* ---------- field table ---------- */
+  .fields{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .fields div{
+    display:grid;grid-template-columns:200px 1fr;gap:16px;
+    padding:14px 20px;border-top:1px solid var(--line);
+  }
+  .fields div:first-child{border-top:0}
+  .fields dt{font-family:'Space Mono',monospace;font-size:12.5px;font-weight:700;color:var(--flame)}
+  .fields dd{font-size:15px;color:var(--ink-soft)}
+  .fields dd b{color:var(--ink);font-weight:600}
+  @media(max-width:560px){.fields div{grid-template-columns:1fr;gap:4px}}
+
+  /* ---------- callouts ---------- */
+  .callout{
+    border-radius:14px;padding:16px 20px;margin:16px 0;font-size:15.5px;
+    border:1px solid var(--line);background:var(--panel);
+  }
+  .callout b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-weight:600;margin-bottom:3px}
+  .callout p{color:var(--ink-soft)}
+  .callout.warn{background:#FFF2E8;border-color:#FFD3B8}
+  .callout.warn b{color:#B23A00}
+  .callout.good{background:var(--mint-soft);border-color:#BFE8D8}
+  .callout.good b{color:#0B7A55}
+
+  /* ---------- troubleshooting ---------- */
+  .filter{
+    display:flex;align-items:center;gap:10px;background:var(--panel);
+    border:1px solid var(--line);border-radius:12px;padding:11px 16px;margin-bottom:14px;
+  }
+  .filter input{
+    border:0;outline:0;background:transparent;flex:1;font:inherit;font-size:15px;color:var(--ink);
+  }
+  .filter span{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--ink-soft);text-transform:uppercase}
+  .fix{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    margin-bottom:10px;overflow:hidden;
+  }
+  .fix[hidden]{display:none}
+  .fix summary{
+    cursor:pointer;padding:15px 20px;font-weight:600;font-size:16px;
+    list-style:none;display:flex;gap:12px;align-items:flex-start;
+  }
+  .fix summary::-webkit-details-marker{display:none}
+  .fix summary::before{
+    content:"+";font-family:'Space Mono',monospace;color:var(--flame);
+    font-size:19px;line-height:1.15;flex:0 0 auto;
+  }
+  .fix[open] summary::before{content:"–"}
+  .fix[open] summary{border-bottom:1px dashed var(--line)}
+  .fix .in{padding:16px 20px 18px 42px}
+  .fix .in p{font-size:15.5px;color:var(--ink-soft)}
+  .fix .in p + p{margin-top:9px}
+  .fix .in b{color:var(--ink)}
+  .fix .why{
+    font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px;
+  }
+  .fix ol,.fix ul{margin:8px 0 0 20px;font-size:15.5px;color:var(--ink-soft)}
+  .fix li{margin-bottom:5px}
+  .noresult{
+    display:none;text-align:center;color:var(--ink-soft);font-size:15px;
+    padding:22px;border:1px dashed var(--line);border-radius:14px;
+  }
+
+  /* ---------- support ---------- */
+  .help{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+  .help a.card{
+    display:block;text-decoration:none;color:inherit;
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;
+  }
+  .help a.card:hover{border-color:var(--flame)}
+  .help .tag{
+    display:inline-block;font-family:'Space Mono',monospace;font-size:10.5px;
+    letter-spacing:.12em;text-transform:uppercase;border-radius:99px;
+    padding:4px 11px;margin-bottom:12px;background:var(--lilac);color:#4B3AA6;
+  }
+  .help .bug .tag{background:#FFEAD8;color:#B23A00}
+  .help .chat .tag{background:var(--mint-soft);color:#0B7A55}
+  .help .card b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:17px;margin-bottom:4px}
+  .help .card p{color:var(--ink-soft);font-size:14.5px}
+  .help .card .when{
+    display:block;margin-top:10px;font-family:'Space Mono',monospace;
+    font-size:11px;letter-spacing:.06em;color:var(--flame);
+  }
+
+  /* ---------- screenshots ---------- */
+  body{counter-reset:fig}
+  .shot{
+    margin:14px 0 4px;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:10px;
+  }
+  .shot img{
+    display:block;width:100%;height:auto;border-radius:8px;
+    border:1px solid var(--line);background:#fff;
+  }
+  .shot figcaption{
+    font-family:'Space Mono',monospace;font-size:11.5px;letter-spacing:.04em;
+    color:var(--ink-soft);padding:9px 4px 2px;
+  }
+  .shot figcaption::before{
+    counter-increment:fig;content:"Fig " counter(fig) " · ";
+    color:var(--flame);font-weight:700;
+  }
+  /* A screenshot inside a step sits flush with that step's text column */
+  .steps .shot{margin-top:10px}
+
+  /* ---------- primary action ---------- */
+  .cta{
+    display:inline-block;text-decoration:none;margin-top:18px;
+    background:var(--flame);color:#fff;border-radius:99px;
+    padding:12px 24px;font-weight:600;font-size:15.5px;
+  }
+  .cta:hover{background:#E64A12}
+  .cta .sub{
+    display:block;font-family:'Space Mono',monospace;font-size:10.5px;
+    letter-spacing:.1em;text-transform:uppercase;opacity:.85;font-weight:400;
+  }
+
+  /* ---------- footer ---------- */
+  footer{margin-top:56px;padding:30px 0 52px;border-top:3px solid var(--ink)}
+  footer .foot-grid{display:flex;flex-wrap:wrap;gap:12px 40px;justify-content:space-between;align-items:baseline}
+  footer .brand{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:19px}
+  footer .brand span{color:var(--flame)}
+  footer p{color:var(--ink-soft);font-size:14.5px}
+  footer code{font-family:'Space Mono',monospace;font-size:13px;background:var(--lilac);padding:2px 8px;border-radius:6px}
+
+  a{color:var(--flame)}
+  :focus-visible{outline:3px solid var(--flame);outline-offset:2px;border-radius:4px}
+  @media(prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    *{transition:none!important}
+  }
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <div class="kicker">Flutterwave · Developer quickstart</div>
+  <h1 class="mast">Flutterwave for Laravel</h1>
+  <p class="dek">Take card, bank transfer, USSD and mobile money payments in your Laravel app, then send payouts and react to payment events. This guide takes you from <code>composer require</code> to a verified test payment and a safe launch, in about 30 minutes.</p>
+  <div class="issue-line">
+    <span>VERSION <b>2.3.0</b></span>
+    <span>LARAVEL 9 TO 13</span>
+    <span>PHP <b>8.1+</b></span>
+    <span>SETUP TIME ~30 MIN</span>
+    <span>UPDATED OCT 2026</span>
+  </div>
+
+  <a class="cta" href="https://packagist.org/packages/abraham-flutterwave/laravel-payment">
+    View on Packagist
+    <span class="sub">abraham-flutterwave/laravel-payment</span>
+  </a>
+
+  <dl class="facts">
+    <div><dt>Package</dt><dd>abraham-flutterwave/laravel-payment</dd></div>
+    <div><dt>Where to install</dt><dd><a href="https://packagist.org/packages/abraham-flutterwave/laravel-payment">Packagist</a>, with Composer</dd></div>
+    <div><dt>Latest release</dt><dd>2.3.0 · 15 Oct 2026</dd></div>
+    <div><dt>Licence</dt><dd>MIT</dd></div>
+    <div><dt>Requires</dt><dd>PHP 8.1+ · Laravel 9 to 13</dd></div>
+    <div><dt>Support</dt><dd><a href="#help">Slack, email &amp; GitHub</a></dd></div>
+  </dl>
+</header>
+
+<div class="wrap shell">
+
+  <nav class="rail" aria-label="On this page">
+    <div class="eyebrow">On this page</div>
+    <ul class="spine">
+      <li><a href="#before">Before you begin</a></li>
+      <li><a href="#install">1 · Install the package</a></li>
+      <li><a href="#connect">2 · Connect your account</a></li>
+      <li><a href="#test">3 · Take a test payment</a></li>
+      <li><a href="#live">4 · Go live</a></li>
+      <li><a href="#fix">Troubleshooting</a></li>
+      <li><a href="#help">Get help</a></li>
+      <li><a href="#report">Report a bug</a></li>
+    </ul>
+  </nav>
+
+  <main>
+
+  <section id="before">
+    <div class="eyebrow">Before you begin</div>
+    <h2>What you need in front of you</h2>
+    <p class="lede">This guide is for the developer adding Flutterwave to a Laravel app. Have these ready and setup goes straight through. Tick them off as you go.</p>
+    <ul class="check">
+      <li><input type="checkbox" id="c1"><label for="c1"><b>A Flutterwave for Business account</b><em>You can finish this whole guide with test keys before your account is approved for live payments.</em></label></li>
+      <li><input type="checkbox" id="c2"><label for="c2"><b>Your API keys</b><em>Public key, secret key and encryption key, from the <a href="https://app.flutterwave.com/dashboard/settings/apis">API keys page</a> on your dashboard. The secret key is the password to your money: keep it in <code>.env</code>, never in code or Git.</em></label></li>
+      <li><input type="checkbox" id="c3"><label for="c3"><b>PHP 8.1 or newer, and Laravel 9, 10, 11, 12 or 13</b><em>Check with <code>php -v</code> and <code>php artisan --version</code>.</em></label></li>
+      <li><input type="checkbox" id="c4"><label for="c4"><b>Composer, and access to the app's <code>.env</code></b><em>The installer writes the Flutterwave keys into <code>.env</code> for you, so it needs to exist.</em></label></li>
+      <li><input type="checkbox" id="c5"><label for="c5"><b>A domain or <code>localhost</code>, not an IP address</b><em>Flutterwave's checkout doesn't load on an address like <code>127.0.0.1</code>. Open your local app on <code>localhost</code> instead.</em></label></li>
+      <li><input type="checkbox" id="c6"><label for="c6"><b>For production: HTTPS and a shared cache</b><em>Webhooks need a public HTTPS URL, and a cache every server shares (redis or database) so each payment event is handled once.</em></label></li>
+    </ul>
+  </section>
+
+  <section id="install">
+    <div class="eyebrow">Step one</div>
+    <h2>Install the package</h2>
+    <p class="lede">Composer pulls it from Packagist. Pick the tab that matches your app: most apps want the first one.</p>
+
+
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" aria-controls="t-composer">Composer</button>
+      <button role="tab" aria-selected="false" aria-controls="t-inertia">With Inertia</button>
+    </div>
+
+    <div class="panel" id="t-composer" role="tabpanel">
+      <p class="hint">For any Laravel app using Blade, an API or Livewire. Updates arrive with <code>composer update</code>.</p>
+      <div class="steps">
+        <article><div class="body">
+          <h3>Require the package</h3>
+          <p>Laravel finds the service provider and the <code>Flutterwave</code> facade on its own.</p>
+          <div class="code"><button class="cp">Copy</button><pre>composer require abraham-flutterwave/laravel-payment</pre></div>
+        </div></article>
+        <article><div class="body">
+          <h3>Run the installer</h3>
+          <p>It publishes <code>config/flutterwave.php</code>, offers to add the four Flutterwave keys to <code>.env</code>, and prints the webhook URL you'll need in step two.</p>
+          <div class="code"><button class="cp">Copy</button><pre>php artisan flutterwave:install</pre></div>
+        </div></article>
+        <article><div class="body">
+          <h3>Add anything else you need</h3>
+          <p>The installer publishes only the config. Add <code>--billable</code> to save customers' cards, or publish the example checkout routes to start from working code:</p>
+          <div class="code"><button class="cp">Copy</button><pre>php artisan vendor:publish --tag=flutterwave-routes</pre></div>
+          <div class="callout warn">
+            <b>Don't publish with --provider</b>
+            <p>Publishing every tag at once puts all three frontends' components in one folder and adds routes and a migration you may not want. Publish by tag instead.</p>
+          </div>
+        </div></article>
+      </div>
+    </div>
+
+    <div class="panel" id="t-inertia" role="tabpanel" hidden>
+      <p class="hint">For Inertia apps with React, Vue 3 or Svelte 5. You get a pay button and a bank transfer component, styled like Flutterwave's own screens.</p>
+      <div class="steps">
+        <article><div class="body">
+          <h3>Require the package</h3>
+          <div class="code"><button class="cp">Copy</button><pre>composer require abraham-flutterwave/laravel-payment</pre></div>
+        </div></article>
+        <article><div class="body">
+          <h3>Install with your frontend</h3>
+          <p>Pick one framework. The components are copied into <code>resources/js/components/flutterwave</code>, so they're yours to edit and add no npm dependency.</p>
+          <div class="code"><button class="cp">Copy</button><pre>php artisan flutterwave:install --react   # or --vue, or --svelte</pre></div>
+        </div></article>
+        <article><div class="body">
+          <h3>Rebuild your assets</h3>
+          <p>Run your usual Vite build so the components, stylesheet and fonts are bundled. Skip this and the imports won't resolve.</p>
+          <div class="code"><button class="cp">Copy</button><pre>npm run build</pre></div>
+        </div></article>
+      </div>
+    </div>
+
+  </section>
+
+  <section id="connect">
+    <div class="eyebrow">Step two</div>
+    <h2>Connect your Flutterwave account</h2>
+    <p class="lede">This is where the app learns which account to charge and how to recognise Flutterwave's payment notifications. Keep your editor and the Flutterwave dashboard open side by side.</p>
+
+    <div class="steps">
+      <article><div class="body">
+        <h3>Copy your keys into .env</h3>
+        <p>On the dashboard, open the <a href="https://app.flutterwave.com/dashboard/settings/apis">API keys page</a>. Copy the public, secret and encryption keys into the lines the installer added:</p>
+        <div class="code"><button class="cp">Copy</button><pre>FLW_PUBLIC_KEY=FLWPUBK_TEST-xxxxxxxx-X
+FLW_SECRET_KEY=FLWSECK_TEST-xxxxxxxx-X
+FLW_ENCRYPTION_KEY=xxxxxxxxxxxx</pre></div>
+        <div class="callout warn">
+          <b>Keep both keys from the same mode</b>
+          <p>Test keys contain <code>_TEST</code>. Mixing a test key with a live one is the most common setup fault, and it shows up as an authorisation error at checkout, not as a config error.</p>
+        </div>
+      </div></article>
+      <article><div class="body">
+        <h3>Choose a secret hash</h3>
+        <p>Invent a long random string and treat it like a password. Put it in <code>.env</code>, then type the same value into <span class="path">Settings → Webhooks → Secret hash</span> on the dashboard. It's how your app proves a payment notification really came from Flutterwave.</p>
+        <div class="code"><button class="cp">Copy</button><pre>FLW_SECRET_HASH=choose-a-long-random-string</pre></div>
+        <p>Leave it empty and the package rejects every webhook, on purpose.</p>
+      </div></article>
+      <article><div class="body">
+        <h3>Add your webhook URL</h3>
+        <p>On the same dashboard screen, paste your app's webhook URL. The package registers this route for you; the installer printed the exact address for your app.</p>
+        <div class="code"><button class="cp">Copy</button><pre>https://your-app.com/flutterwave/webhook</pre></div>
+        <p>Replace <code>your-app.com</code> with your real domain. If you changed <code>FLW_WEBHOOK_PATH</code>, use that path instead.</p>
+      </div></article>
+      <article><div class="body">
+        <h3>Clear cached config</h3>
+        <p>If your app caches config, Laravel won't see the new <code>.env</code> values until you clear it.</p>
+        <div class="code"><button class="cp">Copy</button><pre>php artisan config:clear</pre></div>
+      </div></article>
+      <article><div class="body">
+        <h3>Run the doctor</h3>
+        <p>It checks your keys, webhook secret hash and URL, cache, queue and admin routes, then asks Flutterwave to confirm your secret key. Fix anything marked as failing before you move on.</p>
+        <div class="code"><button class="cp">Copy</button><pre>php artisan flutterwave:doctor</pre></div>
+      </div></article>
+    </div>
+
+    <div class="eyebrow" style="margin-top:30px">Settings reference</div>
+    <dl class="fields">
+      <div><dt>FLW_PUBLIC_KEY</dt><dd>Identifies your account in the browser. <b>Needed for the inline checkout and pay buttons.</b></dd></div>
+      <div><dt>FLW_SECRET_KEY</dt><dd>Authorises every API call from your server. <b>Never commit it or share it.</b></dd></div>
+      <div><dt>FLW_ENCRYPTION_KEY</dt><dd>Encrypts the payloads Flutterwave requires encrypted. From the same API keys page.</dd></div>
+      <div><dt>FLW_SECRET_HASH</dt><dd>Your shared password for webhooks. <b>Must match the dashboard exactly.</b> Empty means every webhook is rejected.</dd></div>
+      <div><dt>FLW_REDIRECT_URL</dt><dd>Where customers land after paying. Defaults to <code>APP_URL/flutterwave/payment/callback</code>.</dd></div>
+      <div><dt>FLW_DEFAULT_CURRENCY</dt><dd>Used when a checkout doesn't name a currency. Defaults to <b>NGN</b>; set <code>FLW_DEFAULT_COUNTRY</code> to match.</dd></div>
+      <div><dt>FLW_WEBHOOK_DEDUPE_STORE</dt><dd>The cache store that remembers handled webhooks. <b>Use redis or database on more than one server.</b></dd></div>
+      <div><dt>FLW_WEBHOOK_QUEUE</dt><dd>Queue name to handle webhooks in the background. Empty handles them during the request.</dd></div>
+    </dl>
+    <p style="margin-top:14px;color:var(--ink-soft);font-size:15.5px">Every option, with its default, is in <code>config/flutterwave.php</code> and on the documentation site's config reference.</p>
+  </section>
+
+  <section id="test">
+    <div class="eyebrow">Step three</div>
+    <h2>Take a test payment</h2>
+    <p class="lede">Do this once before launch. It takes a few minutes and catches key mismatches, webhook faults and currency problems in one pass.</p>
+
+    <div class="steps">
+      <article><div class="body">
+        <h3>Confirm you're on test keys</h3>
+        <p>Both keys in <code>.env</code> should contain <code>_TEST</code>. <code>flutterwave:doctor</code> says which mode it sees.</p>
+      </div></article>
+      <article><div class="body">
+        <h3>Start a checkout</h3>
+        <p>The quickest way is from the terminal. It creates a hosted payment link and opens it in your browser:</p>
+        <div class="code"><button class="cp">Copy</button><pre>php artisan flutterwave:pay you@example.com 100 --open</pre></div>
+        <p>Or from your own code, which is what your customers will use:</p>
+        <div class="code"><button class="cp">Copy</button><pre>use Flutterwave\Payments\Facades\Flutterwave;
+
+return Flutterwave::redirect([
+    'amount' => 5000,
+    'email' => auth()->user()->email,
+    'tx_ref' => $order->reference,  // so you can match it later
+]);</pre></div>
+      </div></article>
+      <article><div class="body">
+        <h3>Pay with a test card</h3>
+        <p>Use a card from Flutterwave's <a href="https://developer.flutterwave.com/docs/testing">testing documentation</a>. It covers success, failure and OTP flows. Real cards are always declined with test keys.</p>
+      </div></article>
+      <article><div class="body">
+        <h3>Listen for the payment</h3>
+        <p>Fulfil orders from the webhook event, not the redirect: customers close tabs, and bank transfers can finish minutes later. The package has already checked the signature and re-fetched the charge from the API when this runs.</p>
+        <div class="code"><button class="cp">Copy</button><pre>use Flutterwave\Payments\Events\ChargeCompleted;
+use Illuminate\Support\Facades\Event;
+
+// In AppServiceProvider::boot()
+Event::listen(function (ChargeCompleted $event) {
+    if (! $event->isSuccessful()) {
+        return;
+    }
+
+    $order = Order::firstWhere('reference', $event->reference());
+
+    if ($order
+        && $event->amount() >= $order->amount
+        && $event->currency() === $order->currency) {
+        $order->markAsPaid();
+    }
+});</pre></div>
+        <p>Flutterwave can't reach <code>localhost</code>. To send a signed webhook for your test payment to your local app, use the transaction id from the dashboard:</p>
+        <div class="code"><button class="cp">Copy</button><pre>php artisan flutterwave:ping-webhook 4975363</pre></div>
+      </div></article>
+      <article><div class="body">
+        <h3>Check all three places agree</h3>
+        <p>A healthy test shows the same transaction in each:</p>
+        <ul style="margin:8px 0 0 20px;color:var(--ink-soft);font-size:15.5px">
+          <li><code>php artisan flutterwave:verify &lt;transaction id&gt;</code> reports it as successful</li>
+          <li>Your order is marked paid, and <code>storage/logs/flutterwave.log</code> shows the <code>charge.completed</code> webhook arriving</li>
+          <li>The Flutterwave dashboard lists the payment under Transactions</li>
+        </ul>
+        <div class="callout good">
+          <b>All three match?</b>
+          <p>Your keys, webhook URL and secret hash are all correct. You're ready to go live.</p>
+        </div>
+      </div></article>
+    </div>
+  </section>
+
+  <section id="live">
+    <div class="eyebrow">Step four</div>
+    <h2>Go live</h2>
+    <p class="lede">Switching to real money is a handful of changes on your production server. Work through them in order.</p>
+    <ul class="check">
+      <li><input type="checkbox" id="l1"><label for="l1"><b>Swap in your live API keys</b><em>Replace all three test keys in the production <code>.env</code> with the live set from the dashboard. Both keys must be live.</em></label></li>
+      <li><input type="checkbox" id="l2"><label for="l2"><b>Set a fresh secret hash</b><em>A new random value in <code>.env</code> and in the dashboard's webhook settings. Don't reuse the one from testing.</em></label></li>
+      <li><input type="checkbox" id="l3"><label for="l3"><b>Point the webhook at production over HTTPS</b><em><code>https://your-domain/flutterwave/webhook</code>, with a shared cache store (and a running queue worker, if you set <code>FLW_WEBHOOK_QUEUE</code>).</em></label></li>
+      <li><input type="checkbox" id="l4"><label for="l4"><b>Re-cache config and run the doctor</b><em>Run <code>php artisan config:cache</code>, then <code>php artisan flutterwave:doctor</code> on the production server. Every line should pass.</em></label></li>
+      <li><input type="checkbox" id="l5"><label for="l5"><b>Make one small real purchase, then refund it</b><em>Use your own card, confirm the order is marked paid, then refund it with <code>Flutterwave::refund($transactionId)</code> or from the dashboard.</em></label></li>
+      <li><input type="checkbox" id="l6"><label for="l6"><b>Note the version you're on</b><em><code>composer show abraham-flutterwave/laravel-payment</code> tells you. Fixes arrive in releases, and support will ask.</em></label></li>
+    </ul>
+  </section>
+
+  <section id="fix">
+    <div class="eyebrow">Troubleshooting</div>
+    <h2>When something's not right</h2>
+    <p class="lede">Search by what you're seeing. Each entry explains what's actually happening before telling you what to change. Run <code>php artisan flutterwave:doctor</code> first: it catches most of these on its own.</p>
+
+    <div class="filter">
+      <span>Filter</span>
+      <input type="search" id="fq" placeholder="e.g. webhook, 401, checkout, pending" aria-label="Filter troubleshooting entries">
+    </div>
+
+    <details class="fix">
+      <summary>The payment modal or checkout page doesn't load</summary>
+      <div class="in">
+        <p class="why">What's happening</p>
+        <p>Flutterwave's checkout refuses to load on a bare IP address, and the inline modal can't start without your public key.</p>
+        <p class="why" style="margin-top:12px">Try in this order</p>
+        <ol>
+          <li>Open your app on <code>localhost</code> or a domain, not <code>127.0.0.1</code>.</li>
+          <li>Check <code>FLW_PUBLIC_KEY</code> is set, then run <code>php artisan config:clear</code>.</li>
+          <li>Using the Inertia components? Rebuild your assets with <code>npm run build</code>.</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="fix">
+      <summary>"Invalid authorization key" or another authentication error</summary>
+      <div class="in">
+        <p class="why">What's happening</p>
+        <p>The secret key Flutterwave received doesn't belong with the request. Almost always a test key mixed with a live one, or a stale value from cached config.</p>
+        <p class="why" style="margin-top:12px">Try in this order</p>
+        <ol>
+          <li>Run <code>php artisan flutterwave:doctor</code>. It flags test and live keys mixed together.</li>
+          <li>Re-copy the keys from the dashboard. A trailing space breaks them silently.</li>
+          <li>Run <code>php artisan config:clear</code> (or <code>config:cache</code> in production) after editing <code>.env</code>.</li>
+          <li>Check you copied the keys from the right account if you have more than one.</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="fix">
+      <summary>The customer paid, but the order is still unpaid</summary>
+      <div class="in">
+        <p class="why">What's happening</p>
+        <p>Your app never handled the webhook. It didn't arrive, was rejected, or arrived with nothing listening for <code>ChargeCompleted</code>.</p>
+        <p class="why" style="margin-top:12px">Try in this order</p>
+        <ol>
+          <li>Check <code>storage/logs/flutterwave.log</code>. No <code>charge.completed</code> line means the webhook never got through.</li>
+          <li>Confirm the dashboard's webhook URL matches your app's, including <code>https://</code> and the path.</li>
+          <li>Confirm you registered a <code>ChargeCompleted</code> listener, and that it matches orders by <code>tx_ref</code>.</li>
+          <li>Set <code>FLW_WEBHOOK_QUEUE</code>? Make sure a queue worker is running for that queue.</li>
+          <li>Testing locally? Flutterwave can't reach you; use <code>php artisan flutterwave:ping-webhook &lt;id&gt;</code>.</li>
+        </ol>
+        <div class="callout warn" style="margin-bottom:0">
+          <b>In the meantime</b>
+          <p>Confirm the payment with <code>php artisan flutterwave:verify &lt;id&gt;</code> and mark the order paid by hand, so the customer isn't left waiting. Then <code>flutterwave:resend-webhook &lt;id&gt;</code> once it's fixed.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="fix">
+      <summary>Every webhook gets a 401</summary>
+      <div class="in">
+        <p class="why">What's happening</p>
+        <p>The signature check failed. The secret hash in your <code>.env</code> doesn't match the one on the dashboard, or it's empty, which rejects everything by design.</p>
+        <p class="why" style="margin-top:12px">Try in this order</p>
+        <ol>
+          <li>Retype <code>FLW_SECRET_HASH</code> in both places rather than trusting a copy.</li>
+          <li>Clear cached config so the app sees the new value.</li>
+          <li>Check nothing in front of your app (a proxy or firewall) strips the <code>flutterwave-signature</code> or <code>verif-hash</code> header.</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="fix">
+      <summary>Webhooks fail with a 500 "Transaction verification failed"</summary>
+      <div class="in">
+        <p class="why">What's happening</p>
+        <p>Before firing <code>ChargeCompleted</code>, the package re-fetches the charge from the API so a forged payload can't mark an order paid. That lookup failed, so it answered 500 and Flutterwave will retry.</p>
+        <p class="why" style="margin-top:12px">Try in this order</p>
+        <ol>
+          <li>Check your keys are from the same mode (test or live) as the payment.</li>
+          <li>Sending your own test payload? Use a real test transaction id, not a made-up one.</li>
+          <li>Look in <code>storage/logs/flutterwave.log</code> for the API's error message.</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="fix">
+      <summary>Orders are fulfilled twice, or events fire more than once</summary>
+      <div class="in">
+        <p class="why">What's happening</p>
+        <p>Flutterwave retries webhooks until it gets a 2xx. The package remembers handled webhooks in your cache, but a cache that forgets between requests, or isn't shared between servers, can't do that.</p>
+        <p class="why" style="margin-top:12px">Try in this order</p>
+        <ol>
+          <li>Set <code>FLW_WEBHOOK_DEDUPE_STORE=redis</code> (or <code>database</code>). The <code>array</code> store forgets everything.</li>
+          <li>Run <code>php artisan flutterwave:doctor</code>; it tests that the cache keeps values and can lock.</li>
+          <li>Make your listener idempotent too: skip orders already marked paid.</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="fix">
+      <summary>Test transfers stay "PENDING" forever</summary>
+      <div class="in">
+        <p class="why">What's happening</p>
+        <p>With test keys, Flutterwave leaves transfers pending unless the reference says how they should end. Sandbox transfers also need your server's IP whitelisted on the dashboard.</p>
+        <p class="why" style="margin-top:12px">Try in this order</p>
+        <ol>
+          <li>Pass <code>'test_outcome' =&gt; 'success'</code> (or <code>'failure'</code>) when you create the transfer.</li>
+          <li>Whitelist your server's IP address on the dashboard.</li>
+          <li>Use Flutterwave's test bank accounts; real account numbers don't resolve in test mode.</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="fix">
+      <summary>The admin page or chargeback screen returns 403</summary>
+      <div class="in">
+        <p class="why">What's happening</p>
+        <p>These screens refund customers and move money, so every action checks the <code>flutterwave.manage</code> ability. Until you define it, everyone is refused, even signed-in admins.</p>
+        <p class="why" style="margin-top:12px">Try in this order</p>
+        <ol>
+          <li>Define the ability in <code>AppServiceProvider::boot()</code>: <code>Gate::define('flutterwave.manage', fn (User $user) =&gt; $user-&gt;is_admin);</code></li>
+          <li>Check <code>Route::flutterwaveAdmin()</code> sits inside your authenticated route group.</li>
+        </ol>
+      </div>
+    </details>
+
+    <p class="noresult" id="nr">No entry matches that. Try a different word, or <a href="#report">report it</a>. An unmatched problem is worth telling us about.</p>
+  </section>
+
+  <section id="help">
+    <div class="eyebrow">Get help</div>
+    <h2>Talk to a human</h2>
+    <p class="lede">Pick the channel that matches what you need. Code and setup questions go to the developer channels; questions about money that has already moved go through your Flutterwave dashboard.</p>
+    <div class="help">
+      <a class="card chat" href="https://bit.ly/34Vkzcg">
+        <span class="tag">Fastest</span>
+        <b>Developer Slack</b>
+        <p>The Flutterwave developer community. Good for setup questions, error messages and "is this normal?"</p>
+        <span class="when">When you're stuck mid-setup</span>
+      </a>
+      <a class="card" href="mailto:developers@flutterwavego.com">
+        <span class="tag">Email</span>
+        <b>developers@flutterwavego.com</b>
+        <p>The developer experience team. Include your package version, Laravel and PHP versions, and what you've already tried.</p>
+        <span class="when">For detail that needs attachments</span>
+      </a>
+      <a class="card" href="https://developer.flutterwave.com/docs/common-errors">
+        <span class="tag">Reference</span>
+        <b>Flutterwave error reference</b>
+        <p>What each API error message means. The package passes Flutterwave's message through in <code>FlutterwaveException</code>.</p>
+        <span class="when">When an API call fails</span>
+      </a>
+      <a class="card bug" href="#report">
+        <span class="tag">Bug</span>
+        <b>Report it on GitHub</b>
+        <p>If the package itself is at fault, an issue gets it in front of the engineers who maintain it.</p>
+        <span class="when">For reproducible faults</span>
+      </a>
+    </div>
+  </section>
+
+  <section id="report">
+    <div class="eyebrow">Report a bug</div>
+    <h2>Tell us what broke</h2>
+    <p class="lede">Open an issue on <a href="https://github.com/bajoski34/Laravel/issues">the package's GitHub issues</a>. Search first: if someone has hit it already, add to their thread rather than opening a new one. Questions belong in Slack, not issues.</p>
+
+    <div class="callout warn">
+      <b>Never paste your secret key, encryption key or secret hash</b>
+      <p>Issues are public. Redact keys, customer names, emails and card details from logs before you post. If you've already exposed a key, roll it on the dashboard immediately.</p>
+    </div>
+
+    <p>Copy this, fill it in, and paste it into the issue:</p>
+    <div class="code"><button class="cp">Copy template</button><pre>### Description
+What went wrong, in one or two sentences.
+
+### Steps to reproduce
+1.
+2.
+3.
+
+**Expected:** what should have happened
+**Actual:** what happened instead
+**Happens:** every time / sometimes / once
+
+### Configuration
+- Package version (composer show abraham-flutterwave/laravel-payment):
+- Laravel version:
+- PHP version:
+- Frontend: Blade / Livewire / Inertia (React, Vue, Svelte) / API
+- Environment: test keys / live keys
+- Output of php artisan flutterwave:doctor --offline:
+
+### Evidence
+Error message, stack trace, or lines from storage/logs/flutterwave.log,
+with keys and customer details removed.</pre></div>
+
+    <p style="margin-top:14px;color:var(--ink-soft);font-size:15.5px">A good report answers "what did you expect, what happened, and how do I make it happen on my machine?" A failing test is the best possible version of that.</p>
+  </section>
+
+  </main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <div class="brand">Flutterwave<span>.</span></div>
+        <p>Developer quickstart for Flutterwave for Laravel 2.3.0 · Generated Oct 2026</p>
+      </div>
+      <p>Full <a href="https://github.com/bajoski34/Laravel/blob/2.x/CHANGELOG.md">changelog</a> and <a href="https://github.com/bajoski34/Laravel">source</a> on GitHub, and every feature on the <a href="https://bajoski34.github.io/Laravel/">documentation site</a>.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  // Nav spine: highlight the section you're reading
+  var links = [].slice.call(document.querySelectorAll('.spine a'));
+  var targets = links.map(function(a){ return document.querySelector(a.getAttribute('href')); }).filter(Boolean);
+  if ('IntersectionObserver' in window && targets.length){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (!e.isIntersecting) return;
+        links.forEach(function(a){
+          a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id);
+        });
+      });
+    }, { rootMargin: '-10% 0px -70% 0px', threshold: 0 });
+    targets.forEach(function(t){ io.observe(t); });
+  }
+
+  // Install method tabs
+  var tabs = [].slice.call(document.querySelectorAll('.tabs button'));
+  tabs.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      tabs.forEach(function(b){
+        var panel = document.getElementById(b.getAttribute('aria-controls'));
+        var on = b === btn;
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+        if (panel) panel.hidden = !on;
+      });
+    });
+  });
+
+  // Copy buttons
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest ? e.target.closest('.cp') : null;
+    if (!btn) return;
+    var pre = btn.parentNode.querySelector('pre');
+    if (!pre) return;
+    var done = function(){
+      var was = btn.textContent;
+      btn.textContent = 'Copied';
+      btn.classList.add('done');
+      setTimeout(function(){ btn.textContent = was; btn.classList.remove('done'); }, 1600);
+    };
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(pre.textContent).then(done, function(){});
+    } else {
+      var r = document.createRange(); r.selectNodeContents(pre);
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      try { document.execCommand('copy'); done(); } catch(err){}
+    }
+  });
+
+  // Troubleshooting filter
+  var q = document.getElementById('fq');
+  if (q){
+    var fixes = [].slice.call(document.querySelectorAll('.fix'));
+    var none = document.getElementById('nr');
+    q.addEventListener('input', function(){
+      var term = q.value.trim().toLowerCase();
+      var shown = 0;
+      fixes.forEach(function(f){
+        var hit = !term || f.textContent.toLowerCase().indexOf(term) !== -1;
+        f.hidden = !hit;
+        if (hit) shown++;
+        if (term && hit) f.open = true;
+        if (!term) f.open = false;
+      });
+      if (none) none.style.display = shown ? 'none' : 'block';
+    });
+  }
+})();
+</script>
+
+</body>
+</html>

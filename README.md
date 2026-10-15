@@ -14,6 +14,8 @@
 Accept payments across Africa and beyond, send payouts, bill subscriptions and react to webhooks, all from Laravel with very little code.
 
 > **Prefer a nicer read?** Read the guides on the [documentation site](https://bajoski34.github.io/Laravel/guide/getting-started), with search and navigation.
+>
+> **Setting up for the first time?** Download the [developer quickstart (PDF)](https://bajoski34.github.io/Laravel/downloads/flutterwave-laravel-guide.pdf). It walks through installing, connecting your Flutterwave account, taking a test payment, going live and troubleshooting, in one printable document. See [Setup guide](#setup-guide-pdf) below.
 
 ```php
 return Flutterwave::redirect(['amount' => 5000, 'email' => 'jane@example.com']);
@@ -50,6 +52,16 @@ That one line creates a hosted checkout supporting cards, bank transfer, USSD, m
 | **Artisan** | `flutterwave:doctor` to check your setup, plus commands to verify payments, check balances, look up banks, accounts, card BINs and bills, and replay webhooks locally |
 
 Supports **PHP 8.1+** and **Laravel 9, 10, 11, 12 and 13**.
+
+## Setup guide (PDF)
+
+A 16-page developer quickstart for teams setting up the package, in Flutterwave's brand:
+
+- **Download:** [flutterwave-laravel-guide.pdf](https://bajoski34.github.io/Laravel/downloads/flutterwave-laravel-guide.pdf) from the documentation site, or the [HTML edition](https://bajoski34.github.io/Laravel/downloads/flutterwave-laravel-guide.html) with a searchable troubleshooting section.
+- **In this repo:** both live in [`docs/public/downloads/`](docs/public/downloads/), so they ship with every docs deploy.
+- **What's in it:** prerequisites, both install routes (Composer, and Composer with the Inertia components), connecting your keys and webhook, one full test payment, a go-live checklist, eight troubleshooting entries, where to get help and a bug report template.
+
+It documents 2.3.0. When a release changes the setup steps or settings, update the HTML edition and re-export the PDF in the same pull request.
 
 ## Installation
 
