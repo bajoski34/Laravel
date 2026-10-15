@@ -30,6 +30,8 @@ export default defineConfig({
       { text: 'Guide', link: '/guide/getting-started', activeMatch: '/guide/' },
       { text: 'Reference', link: '/reference/services', activeMatch: '/reference/' },
       { text: 'Tools', link: '/tools/' },
+      // A file, not a page: VitePress leaves new-tab links alone, so the base is added here.
+      { text: 'PDF guide', link: `${base}downloads/flutterwave-laravel-guide.pdf`, target: '_blank', rel: 'noopener' },
       {
         text: 'v2.3',
         items: [
