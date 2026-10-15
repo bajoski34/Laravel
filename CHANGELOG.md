@@ -38,7 +38,16 @@ The biggest release so far: most of the Flutterwave v3 API, webhooks as Laravel 
 - Artisan commands for both: `flutterwave:chargebacks`, `flutterwave:accept-chargeback`, `flutterwave:decline-chargeback`, `flutterwave:fx-quote`, `flutterwave:fx-trade` and `flutterwave:fx-status`. Commands that refund a customer or move money ask for confirmation, and need `--force` when run without a terminal.
 - Admin components for both, in Blade, React, Vue and Svelte: `Chargebacks` (respond-by countdown, accept, dispute with proof) and `FxConverter` (rate, 5-minute countdown, confirm, follow the trade). `chargebacks()->panel()` and `fx()->panel()` build their data. The endpoints behind them are opt-in with `Route::flutterwaveAdmin()`, and every action needs the `flutterwave.manage` ability, so nothing is reachable until you set both up.
 
+**Saved cards, bills, wallets and identity**
+- `cards()->charge()`, `preauthorize()` and `chargeMany()` charge saved cards with the token from an earlier payment; `updateToken()` keeps a token working after an email change.
+- `Billable` trait: `saveFlutterwaveCard()`, `chargeSavedCard()`, `preauthorizeSavedCard()` and `flutterwaveCard()`, with the token encrypted and hidden from JSON. `php artisan flutterwave:install --billable` publishes the migration.
+- `preauth()`: capture, void and refund card holds.
+- `bills()`: airtime, data, electricity and cable TV. `payValidated()` checks the customer number and the provider's limits before paying. Plus the `flutterwave:bills` command for finding codes.
+- `payoutSubaccounts()`: customer wallets with their own balance and account number.
+- `bvn()`: consent-based BVN verification, with `matches()` to compare names against the BVN record.
+
 **Webhooks**
+- Each webhook's events fire once, however many times Flutterwave delivers it. Handled webhooks are remembered in the cache, but only after they succeed, so a retry after a failed verification still runs. Set `FLW_WEBHOOK_QUEUE` to handle webhooks on a queue, with retries.
 - Automatic `POST /flutterwave/webhook` route. Signatures are checked against `FLW_SECRET_HASH` using either the `verif-hash` header or the HMAC `flutterwave-signature` header.
 - Laravel events: `WebhookReceived`, `ChargeCompleted`, `TransferCompleted`, `SubscriptionCancelled`, `QuoteCompleted` (FX quotes) and `ChargebackUpdated`.
 - `charge.completed` transactions are re-fetched from the API before `ChargeCompleted` fires, so a forged payload can't mark an order as paid. If verification fails, the route responds with HTTP 500 so Flutterwave retries.
@@ -46,6 +55,10 @@ The biggest release so far: most of the Flutterwave v3 API, webhooks as Laravel 
 
 **Developer experience**
 - Artisan commands: `flutterwave:install` (publishes the config, adds keys to `.env` and prints the webhook URL), `flutterwave:verify` and `flutterwave:banks`.
+- `Flutterwave::fake()` for testing apps that use the package: realistic responses for every endpoint, assertions such as `assertCheckoutCreated()` and `assertTransferSent()`, and signed webhook headers.
+- `flutterwave:doctor` checks keys, webhooks, the cache, the queue and API access in one go.
+- `ChargebackRaised` and `TransferFailed` notifications, sent automatically to the addresses in `FLW_NOTIFY_CHARGEBACKS` and `FLW_NOTIFY_FAILED_TRANSFERS`.
+- An optional admin page from `Route::flutterwaveAdmin()`, with balances, chargebacks and the FX converter.
 - Artisan commands matching the standalone Flutterwave CLI: `flutterwave:balance`, `flutterwave:branches`, `flutterwave:resolve`, `flutterwave:bin`, `flutterwave:rate`, `flutterwave:pay`, `flutterwave:resend-webhook` and `flutterwave:ping-webhook` (posts a signed webhook for a real transaction to a local URL).
 - `cards()->bin($bin)` service for card BIN lookups.
 - `banks()->resolveAccount()` takes an optional country for Ghanaian bank accounts and mobile money numbers, and the new `banks()->resolveMerchant($id)` checks Flutterwave merchant IDs. `flutterwave:resolve` supports both with `--country` and `--merchant`.

@@ -12,11 +12,15 @@ use Flutterwave\Payments\Helpers\Event;
 use Flutterwave\Payments\Services\Balances;
 use Flutterwave\Payments\Services\Banks;
 use Flutterwave\Payments\Services\Beneficiaries;
+use Flutterwave\Payments\Services\Bills;
+use Flutterwave\Payments\Services\Bvn;
 use Flutterwave\Payments\Services\Cards;
 use Flutterwave\Payments\Services\Chargebacks;
 use Flutterwave\Payments\Services\Fx;
 use Flutterwave\Payments\Services\Modal;
 use Flutterwave\Payments\Services\PaymentPlans;
+use Flutterwave\Payments\Services\PayoutSubaccounts;
+use Flutterwave\Payments\Services\Preauthorizations;
 use Flutterwave\Payments\Services\Refunds;
 use Flutterwave\Payments\Services\Settlements;
 use Flutterwave\Payments\Services\Stablecoins;
@@ -59,6 +63,10 @@ final class Flutterwave
         'cards' => Cards::class,
         'chargebacks' => Chargebacks::class,
         'fx' => Fx::class,
+        'preauth' => Preauthorizations::class,
+        'bills' => Bills::class,
+        'payout_subaccounts' => PayoutSubaccounts::class,
+        'bvn' => Bvn::class,
     ];
 
     private array $config;
@@ -222,6 +230,26 @@ final class Flutterwave
     public function fx(): Fx
     {
         return $this->use('fx');
+    }
+
+    public function preauth(): Preauthorizations
+    {
+        return $this->use('preauth');
+    }
+
+    public function bills(): Bills
+    {
+        return $this->use('bills');
+    }
+
+    public function payoutSubaccounts(): PayoutSubaccounts
+    {
+        return $this->use('payout_subaccounts');
+    }
+
+    public function bvn(): Bvn
+    {
+        return $this->use('bvn');
     }
 
     public function webhooks(): Webhooks

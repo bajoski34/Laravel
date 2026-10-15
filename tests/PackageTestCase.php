@@ -32,5 +32,9 @@ class PackageTestCase extends TestCase
 
         // Virtual accounts are cached per tx_ref; keep that in memory whatever the skeleton's .env says.
         $app['config']->set('cache.default', 'array');
+
+        // Older Testbench skeletons default to mysql; the saved card tests need a database.
+        $app['config']->set('database.default', 'testing');
+        $app['config']->set('database.connections.testing', ['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => '', 'foreign_key_constraints' => true]);
     }
 }

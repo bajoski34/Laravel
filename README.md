@@ -38,7 +38,12 @@ That one line creates a hosted checkout supporting cards, bank transfer, USSD, m
 | **Balances & settlements** | Wallet balances and settlement history |
 | **Chargebacks** | List disputes, accept them, or decline with uploaded proof |
 | **FX trades** | Request a quote and convert NGN, GHS and USD at the quoted rate |
-| **Artisan** | Verify payments, check balances, look up banks, accounts and card BINs, create payment links and replay webhooks locally |
+| **Saved cards** | Charge a customer's card again with a `Billable` trait; pre-authorize, capture and void holds |
+| **Bill payments** | Airtime, data, electricity and cable TV, with customer number validation |
+| **Wallets** | Payout subaccounts: a balance and bank account number for each customer |
+| **BVN verification** | Consent-based BVN checks for Nigerian customers |
+| **Testing** | `Flutterwave::fake()` with realistic responses and assertions |
+| **Artisan** | `flutterwave:doctor` to check your setup, plus commands to verify payments, check balances, look up banks, accounts, card BINs and bills, and replay webhooks locally |
 
 Supports **PHP 8.1+** and **Laravel 9, 10, 11, 12 and 13**.
 
@@ -243,6 +248,21 @@ Event::listen(function (ChargeCompleted $event) {
 
 Change the path, add middleware or turn the route off under `webhook` in `config/flutterwave.php`.
 
+### Duplicate webhooks and queueing
+
+Flutterwave retries a webhook until your app answers with a 2xx, so the same webhook can arrive more than once. The package fires each webhook's events only once. It remembers handled webhooks in your cache for 7 days, but only after they've been handled, so a webhook whose charge couldn't be verified still gets through when Flutterwave retries. If two copies arrive at the same moment, one waits, and Flutterwave retries the other.
+
+Use a cache store that every server shares and that survives restarts, such as redis or database. The `array` store forgets everything between requests. Set `FLW_WEBHOOK_DEDUPE_STORE` to use a different store from your default.
+
+To answer Flutterwave immediately and handle webhooks in the background, set a queue:
+
+```dotenv
+FLW_WEBHOOK_QUEUE=payments
+FLW_WEBHOOK_QUEUE_CONNECTION=redis   # optional, defaults to your default connection
+```
+
+The queued job retries for about four hours when a charge can't be verified yet. Keep a worker running: `php artisan queue:work --queue=payments`.
+
 ## Transfers (payouts)
 
 ```php
@@ -325,6 +345,58 @@ Flutterwave::subscriptions()->all(['email' => $user->email]);
 Flutterwave::subscriptions()->cancel($subscriptionId);
 ```
 
+## Saved cards
+
+After a customer pays by card once, you can charge that card again without them entering it. Add the columns and the trait:
+
+```shell
+php artisan flutterwave:install --billable
+php artisan migrate
+```
+
+```php
+use Flutterwave\Payments\Billable;
+
+class User extends Authenticatable
+{
+    use Billable;
+}
+```
+
+Save the card when the first payment comes in, then charge it whenever you need to:
+
+```php
+Event::listen(function (ChargeCompleted $event) {
+    if ($event->isSuccessful() && ($event->transaction['payment_type'] ?? null) === 'card') {
+        User::where('email', $event->customerEmail())->first()?->saveFlutterwaveCard($event->transaction);
+    }
+});
+
+$user->flutterwaveCard()?->label();        // "MASTERCARD ending 2950"
+$charge = $user->chargeSavedCard(5000, ['narration' => 'October plan']);
+```
+
+- **Token storage:** the card token is stored encrypted, and hidden from `toArray()` and JSON, so it never reaches the browser in an Inertia prop.
+- **Expiry:** tokens are tied to the email the card was saved with and last a year. `$user->flutterwaveCard()->expiresWithin(30)` tells you when to ask the customer to pay by card again.
+- **3-D Secure:** repeat charges use 3-D Secure unless Flutterwave has enabled no-auth charges on your account, so check `$charge['data']['status']`. A `pending` charge is waiting for the customer to approve it, and its webhook arrives when they do.
+
+Without the trait, call the service directly: `Flutterwave::cards()->charge($token, $email, 5000)`. `chargeMany()` charges many cards in one request, which needs no-auth charges enabled.
+
+### Pre-authorization
+
+Hold an amount on a saved card now, and charge it later, for example when a ride ends or a guest checks out. Flutterwave has to enable this on your account.
+
+```php
+$hold = $user->preauthorizeSavedCard(20000);
+$ref = $hold['data']['flw_ref'];
+
+Flutterwave::preauth()->capture($ref, 15000);  // charge part or all of it, once or several times
+Flutterwave::preauth()->void($ref);            // or release the hold
+Flutterwave::preauth()->refund($ref, 5000);    // give back money you captured
+```
+
+Holds you don't capture are released after 7 days.
+
 ## Virtual accounts
 
 ```php
@@ -373,6 +445,21 @@ Base your frontend countdown on `expires_in`, not `expires_at`, so a wrong clock
 
 When the customer pays, Flutterwave sends a `charge.completed` webhook with `payment_type: bank_transfer`, so your existing `ChargeCompleted` listener handles it. NGN accounts reverse an underpayment, and also any amount paid over the total. GHS accounts reject anything that isn't the exact amount.
 
+## Wallets (payout subaccounts)
+
+Give each customer a wallet: a balance on your Flutterwave account with its own bank account number, so anyone can pay into it.
+
+```php
+$wallet = Flutterwave::payoutSubaccounts()->create('Jane Doe', 'jane@example.com', 'NG', '08100000000');
+$reference = $wallet['data']['account_reference'];   // store this on the customer
+
+$wallet['data']['nuban'];                            // the account number to fund it
+Flutterwave::payoutSubaccounts()->balance($reference);
+Flutterwave::payoutSubaccounts()->transactions($reference, '2026-10-01', '2026-10-31');
+```
+
+`all()`, `find()`, `update()`, `staticAccount()` and `delete()` cover the rest. Deleting deactivates the wallet in the background.
+
 ## Chargebacks
 
 When a customer disputes a payment with their bank, respond before the due date: 10 working hours for local transactions, 30 for international ones. If you don't, the chargeback is lost and the customer is refunded.
@@ -417,6 +504,41 @@ Flutterwave::fx()->findTrade($trade['data']['id']);  // NEW, PENDING, then SETTL
 
 A quote is valid for 5 minutes and can only be traded once. `tradeIfReady()` re-checks the quote first, so an expired one fails with a clear message instead of at the API. `approved_quantity` can be lower than the amount you asked for, depending on liquidity and your account limits. Instead of polling, listen for `QuoteCompleted`, and for `TransferCompleted` when the trade settles.
 
+## Bill payments
+
+Pay for airtime, data, electricity, cable TV and more from your Flutterwave balance. Find the codes first. `php artisan flutterwave:bills` walks you through them, or do it in code:
+
+```php
+Flutterwave::bills()->categories();          // AIRTIME, MOBILEDATA, CABLEBILLS, UTILITYBILLS...
+Flutterwave::bills()->billers('CABLEBILLS'); // DSTV is BIL119
+Flutterwave::bills()->items('BIL119');       // DSTV Premium is CB140, with its price and fee
+```
+
+Bill payments can't be undone, so check the customer's meter, smartcard or phone number first. `payValidated()` validates it, checks the amount against the provider's limits, and only then pays:
+
+```php
+$payment = Flutterwave::bills()->payValidated('BIL119', 'CB140', $smartcardNumber, 14600);
+
+Flutterwave::bills()->status($payment['data']['tx_ref']);
+Flutterwave::bills()->history(['status' => 'Failed']);
+```
+
+`validate()` on its own returns the name on the account, so you can show it to the customer to confirm.
+
+## BVN verification
+
+Check a Nigerian customer's Bank Verification Number, with their consent, before giving them a static virtual account or a wallet:
+
+```php
+$consent = Flutterwave::bvn()->requestConsent($bvn, $firstName, $lastName, route('kyc.done'));
+// Store $consent['data']['reference'], then send the customer to $consent['data']['url'] to consent.
+
+// When they come back:
+Flutterwave::bvn()->matches($reference, $firstName, $lastName);  // true once consented and the names match
+```
+
+The full result from `verification($reference)` includes personal data, including a photo of the customer's face. Keep only what you need, and don't log it. The package never logs successful responses.
+
 ## Admin components for chargebacks and FX
 
 Drop-in screens for your team: a chargeback list where you can accept or dispute each chargeback, and an FX converter that gets a rate, trades it and follows the trade. They come in Blade, React, Vue and Svelte. The Inertia versions are published with the rest of the components (`flutterwave:install --react`, `--vue` or `--svelte`).
@@ -460,6 +582,29 @@ In Blade, pass the same arrays: `<x-flutterwave-chargebacks :panel="$chargebacks
 - **Chargebacks** shows how long is left to respond, highlighted when it's under two hours, plus the customer's reason and the history. Disputing uploads one JPEG, PNG or PDF under 8MB, checked in the browser and again on the server. Accepting asks for a reason. Without the routes, the list is read-only.
 - **FX converter** walks through each step: request a rate, wait while it's priced, review the rate with a 5-minute countdown, confirm the trade, then watch it until it settles. While a quote or trade is pending, it checks for updates by itself. The quote and trade IDs are kept in the `fx_quote` and `fx_trade` query parameters, so a page reload keeps your place. If Flutterwave approves less than you asked for, the converter says so before you trade.
 
+### Ready-made admin page
+
+`Route::flutterwaveAdmin()` also registers a page at its prefix (`/admin/flutterwave` in the example above). It shows your wallet balances, the chargebacks that need a response (with an "All" tab), and the FX converter. It checks the same `flutterwave.manage` ability. To change it, publish the views with `php artisan vendor:publish --tag=flutterwave-views` and edit `admin/index.blade.php`. To register only the actions and use your own page, call `Route::flutterwaveAdmin(page: false)`.
+
+## Notifications
+
+Chargebacks have deadlines, and failed payouts mean someone wasn't paid. Set addresses to hear about both by email:
+
+```dotenv
+FLW_NOTIFY_CHARGEBACKS=disputes@shop.test,owner@shop.test
+FLW_NOTIFY_FAILED_TRANSFERS=finance@shop.test
+```
+
+The chargeback email says how long you have and links to the admin page when it's registered. To send the notifications yourself, for example to Slack or the database, use the classes directly:
+
+```php
+use Flutterwave\Payments\Notifications\ChargebackRaised;
+
+$admin->notify(new ChargebackRaised($event->data, ['mail', 'database']));
+```
+
+`TransferFailed` works the same way with a transfer from `TransferCompleted`.
+
 ## Split payments
 
 ```php
@@ -500,6 +645,7 @@ Every method returns Flutterwave's JSON response as an array (`status`, `message
 Everything the standalone [Flutterwave CLI](https://github.com/Flutterwave/CLI) does, using the keys already in your `.env`:
 
 ```shell
+php artisan flutterwave:doctor                          # check keys, webhooks, cache, queue and API access
 php artisan flutterwave:verify 4975363                  # transaction status by id
 php artisan flutterwave:verify ORDER-42 --ref           # ...or by tx_ref
 php artisan flutterwave:balance --currency=NGN          # wallet balances
@@ -522,7 +668,11 @@ php artisan flutterwave:decline-chargeback 1599 --proof=storage/disputes/1599.pd
 php artisan flutterwave:fx-quote NGN USD 2000000         # waits until the rate is ready
 php artisan flutterwave:fx-trade 570e21b4 --narration="Supplier payment"
 php artisan flutterwave:fx-status 08e27e03 --trade
+
+php artisan flutterwave:bills                           # bill categories, then: flutterwave:bills CABLEBILLS, flutterwave:bills --biller=BIL119
 ```
+
+Run `flutterwave:doctor` after installing and before going live. It flags test and live keys mixed together, a missing webhook secret hash (which makes every webhook get rejected), a webhook URL Flutterwave can't reach, a cache that won't remember handled webhooks, and admin routes without the `flutterwave.manage` ability. It then checks that Flutterwave accepts your secret key. Pass `--offline` to skip that last check.
 
 Commands that refund a customer or move money (`accept-chargeback`, `decline-chargeback` and `fx-trade`) show what will happen and ask before going ahead. Pass `--force` to run them from scripts or CI. Without it, they change nothing when there's no terminal to ask in.
 
@@ -552,19 +702,37 @@ Everything the package does is logged to `storage/logs/flutterwave.log`.
 
 ## Testing your app
 
-The package uses Laravel's HTTP client, so you can fake Flutterwave in your tests:
+`Flutterwave::fake()` answers every Flutterwave API call with a realistic response, and records what your app sent. It only fakes Flutterwave, so your other `Http::fake()` calls keep working:
 
 ```php
-use Illuminate\Support\Facades\Http;
+use Flutterwave\Payments\Facades\Flutterwave;
 
-Http::fake([
-    'api.flutterwave.com/v3/payments' => Http::response(['status' => 'success', 'data' => ['link' => 'https://checkout.test']]),
-]);
+it('starts a checkout for the order total', function () {
+    $flutterwave = Flutterwave::fake();
 
-$this->post('/pay')->assertRedirect('https://checkout.test');
+    $this->post('/orders/42/pay')->assertRedirect();
+
+    $flutterwave->assertCheckoutCreated(fn (array $payment) => $payment['amount'] === 5000);
+});
 ```
 
-To test your webhook listeners, post to `/flutterwave/webhook` with a `verif-hash` header equal to your `FLW_SECRET_HASH`. Or run `php artisan flutterwave:ping-webhook {transaction-id}` against your dev server.
+Verifying a transaction only succeeds for ones you register, so a test can't pass by accident:
+
+```php
+Flutterwave::fake()->transaction(4975363, ['amount' => 5000, 'currency' => 'NGN', 'tx_ref' => 'ORDER-42']);
+```
+
+- **Failures:** `failing('POST', 'transfers', 'Insufficient wallet balance')` makes a call fail the way Flutterwave does. `respond('GET', 'transfers/*', [...])` answers an endpoint yourself.
+- **Assertions:** `assertCheckoutCreated()`, `assertTransferSent()`, `assertCardCharged()`, `assertRefunded($id, $amount)`, `assertBillPaid()`, `assertSent($method, $path, $callback)`, `assertNotSent()` and `assertNothingSent()`.
+- **Webhooks:** post your test payload with `FlutterwaveFake::webhookHeaders()` to pass the signature check. Registered transactions are verified the same way they are in production:
+
+```php
+use Flutterwave\Payments\Testing\FlutterwaveFake;
+
+$this->postJson('/flutterwave/webhook', ['event' => 'charge.completed', 'data' => ['id' => 4975363]], FlutterwaveFake::webhookHeaders());
+```
+
+The fake fills in placeholder keys when your test environment has none. To test against a running app instead, use `php artisan flutterwave:ping-webhook {transaction-id}`.
 
 ## Customising
 

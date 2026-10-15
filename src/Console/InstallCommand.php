@@ -14,7 +14,8 @@ class InstallCommand extends Command
         {--force : Overwrite files that were already published}
         {--react : Also publish the React components for Inertia apps}
         {--vue : Also publish the Vue 3 components for Inertia apps}
-        {--svelte : Also publish the Svelte 5 components for Inertia apps}';
+        {--svelte : Also publish the Svelte 5 components for Inertia apps}
+        {--billable : Also publish the migration for saving customers\' cards}';
 
     protected $description = 'Publish the Flutterwave config and add the required keys to your .env file';
 
@@ -47,6 +48,10 @@ class InstallCommand extends Command
             $this->publishComponents($frameworks[0]);
         }
 
+        if ($this->option('billable')) {
+            $this->publishBillableMigration();
+        }
+
         if (config('flutterwave.webhook.enabled', true)) {
             $this->newLine();
             $this->line('Set this as your webhook URL on the Flutterwave dashboard (Settings > Webhooks):');
@@ -62,6 +67,18 @@ class InstallCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    private function publishBillableMigration(): void
+    {
+        if (glob(database_path('migrations/*_add_flutterwave_card_columns.php')) !== []) {
+            $this->info('The saved card migration is already in database/migrations.');
+
+            return;
+        }
+
+        $this->callSilent('vendor:publish', ['--tag' => 'flutterwave-migrations']);
+        $this->info('Published the saved card migration. Run php artisan migrate, then add the Flutterwave\\Payments\\Billable trait to your User model.');
     }
 
     private function publishComponents(string $framework): void

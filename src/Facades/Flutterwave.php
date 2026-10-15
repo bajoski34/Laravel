@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Flutterwave\Payments\Facades;
 
+use Flutterwave\Payments\Testing\FlutterwaveFake;
 use Illuminate\Support\Facades\Facade;
 
 /**
@@ -33,12 +34,24 @@ use Illuminate\Support\Facades\Facade;
  * @method static \Flutterwave\Payments\Services\Cards cards()
  * @method static \Flutterwave\Payments\Services\Chargebacks chargebacks()
  * @method static \Flutterwave\Payments\Services\Fx fx()
+ * @method static \Flutterwave\Payments\Services\Preauthorizations preauth()
+ * @method static \Flutterwave\Payments\Services\Bills bills()
+ * @method static \Flutterwave\Payments\Services\PayoutSubaccounts payoutSubaccounts()
+ * @method static \Flutterwave\Payments\Services\Bvn bvn()
  * @method static \Flutterwave\Payments\Services\Webhooks webhooks()
  *
  * @see \Flutterwave\Payments\Flutterwave
  */
 class Flutterwave extends Facade
 {
+    /**
+     * Answer every Flutterwave API call in your tests with a realistic fake response.
+     */
+    public static function fake(): FlutterwaveFake
+    {
+        return FlutterwaveFake::start();
+    }
+
     protected static function getFacadeAccessor(): string
     {
         return 'flutterwave';

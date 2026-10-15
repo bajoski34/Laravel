@@ -1,0 +1,41 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+/**
+ * Columns for the Flutterwave\Payments\Billable trait. Change the table if your
+ * billable model isn't App\Models\User.
+ */
+return new class extends Migration
+{
+    private string $table = 'users';
+
+    public function up(): void
+    {
+        Schema::table($this->table, function (Blueprint $table) {
+            // Encrypted by the Billable trait, so it needs more room than the token itself.
+            $table->text('flutterwave_card_token')->nullable();
+            $table->string('flutterwave_card_email')->nullable();
+            $table->string('flutterwave_card_last4', 4)->nullable();
+            $table->string('flutterwave_card_type', 30)->nullable();
+            $table->string('flutterwave_card_expiry', 5)->nullable();
+            $table->timestamp('flutterwave_card_saved_at')->nullable();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table($this->table, function (Blueprint $table) {
+            $table->dropColumn([
+                'flutterwave_card_token',
+                'flutterwave_card_email',
+                'flutterwave_card_last4',
+                'flutterwave_card_type',
+                'flutterwave_card_expiry',
+                'flutterwave_card_saved_at',
+            ]);
+        });
+    }
+};

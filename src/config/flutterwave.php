@@ -45,12 +45,38 @@ return [
      |
      | verify_charges re-fetches every charge.completed transaction from the API
      | before ChargeCompleted fires, so you never act on a forged payload.
+     |
+     | dedupe makes sure each webhook fires its events once, even though
+     | Flutterwave retries deliveries. Handled webhooks are remembered in the
+     | cache (dedupe_store, or your default store) for dedupe_for seconds, so use
+     | a store that's shared and persistent, like redis or database.
+     |
+     | Set queue to a queue name to handle webhooks there instead of during the
+     | request. Flutterwave gets its 200 straight away, and the job retries.
      */
     'webhook' => [
         'enabled' => env('FLW_WEBHOOK_ENABLED', true),
         'path' => env('FLW_WEBHOOK_PATH', 'flutterwave/webhook'),
         'middleware' => [],
         'verify_charges' => true,
+        'dedupe' => env('FLW_WEBHOOK_DEDUPE', true),
+        'dedupe_store' => env('FLW_WEBHOOK_DEDUPE_STORE'),
+        'dedupe_for' => 7 * 24 * 3600,
+        'queue' => env('FLW_WEBHOOK_QUEUE'),
+        'queue_connection' => env('FLW_WEBHOOK_QUEUE_CONNECTION'),
+    ],
+
+    /*
+     |--------------------------------------------------------------------------
+     | Notifications [YOU CAN EDIT THIS SECTION]
+     |--------------------------------------------------------------------------
+     | Email addresses (comma-separated) to notify when a chargeback is raised,
+     | so you can respond before the deadline, or when a payout fails. Leave
+     | empty to send nothing; you can also send the notifications yourself.
+     */
+    'notify' => [
+        'chargebacks' => env('FLW_NOTIFY_CHARGEBACKS'),
+        'failed_transfers' => env('FLW_NOTIFY_FAILED_TRANSFERS'),
     ],
 
     'paths' => [
