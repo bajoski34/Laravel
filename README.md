@@ -774,6 +774,16 @@ For trying flows by hand against Flutterwave's sandbox, `Flutterwave\Payments\Te
 - **Views:** run `php artisan vendor:publish --tag=flutterwave-views`.
 - **Swap a service:** map a key in `services`, e.g. `'transfers' => App\Payments\Transfers::class` (extend the original class), or set a key to `null` to disable that service.
 
+## Upgrading from 2.2
+
+Nothing to change in your code. Three things behave differently:
+
+- **Webhooks fire once.** A webhook Flutterwave delivers twice no longer fires its events twice. Handled webhooks are remembered in your cache, so with more than one server, use a shared store such as redis or database (`FLW_WEBHOOK_DEDUPE_STORE`). Run `php artisan flutterwave:doctor` to check. Set `FLW_WEBHOOK_DEDUPE=false` to keep the old behaviour.
+- **Simultaneous webhooks.** If two copies of a webhook arrive at once, the second gets a `409`, and Flutterwave retries it later.
+- **`Flutterwave::redirect()` on Inertia requests** returns a `409` with `X-Inertia-Location` instead of a redirect, so its return type is now `RedirectResponse|Response`. If a controller declares `: RedirectResponse` and returns it, widen the return type.
+
+If you've published `config/flutterwave.php`, the new options (`checksum`, `notify`, and the webhook `dedupe` and `queue` settings) use their defaults until you add them. Compare with `php artisan vendor:publish --tag=flutterwave-config --force` in a scratch branch.
+
 ## Upgrading from 2.1
 
 Existing code keeps working: `render()`, `use()`, `verifyTransaction()`, `verifyTransactionReference()` and `generateTransactionReference()` are unchanged. A few things to note:

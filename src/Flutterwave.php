@@ -39,7 +39,7 @@ final class Flutterwave
 {
     use Event;
 
-    const VERSION = '2.2.0';
+    const VERSION = '2.3.0';
 
     /**
      * Services available out of the box. Entries in config('flutterwave.services')
