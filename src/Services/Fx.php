@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Flutterwave\Payments\Services;
 
+use Flutterwave\Payments\Exception\FlutterwaveException;
 use Flutterwave\Payments\Exception\InvalidArgument;
+use Illuminate\Support\Facades\Route;
 
 /**
  * Convert between currencies at a quoted rate: request a quote, wait for it to
@@ -23,6 +25,14 @@ class Fx extends Service
 
     /** Trade statuses: NEW, then PENDING, then SETTLED or FAILED. */
     public const TRADE_SETTLED = 'SETTLED';
+
+    /** Pairs Flutterwave supports today, offered by the FX components. */
+    public const PAIRS = [['NGN', 'USD'], ['GHS', 'USD'], ['USD', 'NGN']];
+
+    /** Query parameters the FX routes redirect back with, so a page reload keeps showing the same quote or trade. */
+    public const QUOTE_PARAM = 'fx_quote';
+
+    public const TRADE_PARAM = 'fx_trade';
 
     /** The API reference documents POST /trades; its guide's example uses /trade. */
     private const TRADE_ENDPOINT = 'trades';
@@ -97,5 +107,84 @@ class Fx extends Service
         }
 
         return $this->trade($quoteId, $narration, $meta);
+    }
+
+    /**
+     * Everything the FX converter components need, as one array: e.g. an Inertia prop
+     * or the :panel of <x-flutterwave-fx>. Pass the ids from the fx_quote and fx_trade
+     * query parameters. API errors come back in `error` instead of being thrown.
+     */
+    public function panel(?string $quoteId = null, ?string $tradeId = null): array
+    {
+        $panel = [
+            'quote' => null,
+            'trade' => null,
+            'error' => null,
+            'pairs' => self::PAIRS,
+            'urls' => Route::has('flutterwave.fx.quote')
+                ? ['quote' => route('flutterwave.fx.quote'), 'trade' => route('flutterwave.fx.trade')]
+                : null,
+        ];
+
+        try {
+            if ($tradeId) {
+                $panel['trade'] = $this->presentTrade($this->findTrade($tradeId)['data'] ?? []);
+            }
+
+            if ($quoteId) {
+                $panel['quote'] = $this->presentQuote($this->findQuote($quoteId)['data'] ?? []);
+            }
+        } catch (FlutterwaveException $e) {
+            $panel['error'] = $e->getMessage();
+        }
+
+        return $panel;
+    }
+
+    private function presentQuote(array $data): array
+    {
+        [$base, $target] = array_pad(explode('/', (string) ($data['instrument'] ?? '')), 2, null);
+        $quote = $data['quote'] ?? null;
+        // Quote expiry times are UTC (they end in Z), so this is safe to compare with time().
+        $expiry = $quote ? (strtotime((string) ($quote['expiry'] ?? '')) ?: null) : null;
+        $status = (string) ($data['status'] ?? '');
+
+        return [
+            'id' => $data['id'] ?? null,
+            'reference' => $data['reference'] ?? null,
+            'status' => $status,
+            'base' => $base,
+            'target' => $target,
+            'quantity' => $data['quantity'] ?? null,
+            'approved_quantity' => $quote['approved_quantity'] ?? null,
+            'rate' => isset($quote['best_available_rate']) ? (string) $quote['best_available_rate'] : null,
+            'total_value' => $quote['total_value'] ?? null,
+            'expires_at' => $expiry ? date(DATE_ATOM, $expiry) : null,
+            'expires_in' => $expiry ? max(0, $expiry - time()) : null,
+            'message' => $data['complete_message'] ?? null,
+            'pending' => in_array($status, ['NEW', 'PROCESSING'], true),
+            'tradable' => $status === self::QUOTE_READY && $expiry !== null && $expiry > time(),
+        ];
+    }
+
+    private function presentTrade(array $data): array
+    {
+        [$base, $target] = array_pad(explode('/', (string) ($data['instrument'] ?? '')), 2, null);
+        $status = (string) ($data['status'] ?? '');
+
+        return [
+            'id' => $data['id'] ?? null,
+            'status' => $status,
+            'base' => $base,
+            'target' => $target,
+            'sold' => $data['approved_quantity'] ?? $data['quantity'] ?? null,
+            'bought' => $data['price'] ?? null,
+            'recipient' => $data['recipient']['name'] ?? null,
+            'narration' => $data['narration'] ?? null,
+            'reference' => $data['reference'] ?? null,
+            'message' => $data['response_message'] ?? null,
+            'created_at' => $data['created_at'] ?? null,
+            'pending' => ! in_array($status, [self::TRADE_SETTLED, 'FAILED'], true),
+        ];
     }
 }

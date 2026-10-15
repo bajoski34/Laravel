@@ -417,6 +417,49 @@ Flutterwave::fx()->findTrade($trade['data']['id']);  // NEW, PENDING, then SETTL
 
 A quote is valid for 5 minutes and can only be traded once. `tradeIfReady()` re-checks the quote first, so an expired one fails with a clear message instead of at the API. `approved_quantity` can be lower than the amount you asked for, depending on liquidity and your account limits. Instead of polling, listen for `QuoteCompleted`, and for `TransferCompleted` when the trade settles.
 
+## Admin components for chargebacks and FX
+
+Drop-in screens for your team: a chargeback list where you can accept or dispute each chargeback, and an FX converter that gets a rate, trades it and follows the trade. They come in Blade, React, Vue and Svelte. The Inertia versions are published with the rest of the components (`flutterwave:install --react`, `--vue` or `--svelte`).
+
+These screens refund customers and move money, so they're off until you turn them on in two places.
+
+**1. Register the routes inside your own admin group.** Nothing is registered until you call `Route::flutterwaveAdmin()`:
+
+```php
+// routes/web.php
+Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
+    Route::flutterwaveAdmin();  // POST admin/flutterwave/chargebacks/{id}/accept|decline, admin/flutterwave/fx/quotes|trades
+});
+```
+
+**2. Say who may use them.** Every action checks the `flutterwave.manage` ability. Until you define it, every request is refused with a 403, even for signed-in users:
+
+```php
+// AppServiceProvider::boot()
+Gate::define('flutterwave.manage', fn (User $user) => $user->is_admin);
+```
+
+Then give your page the panel data. `panel()` returns everything the component needs, including the countdowns and the action URLs. API errors come back in `panel['error']` instead of being thrown:
+
+```php
+return Inertia::render('Admin/Payments', [
+    'chargebacks' => Flutterwave::chargebacks()->panel(['status' => 'initiated']),
+    'fx' => Flutterwave::fx()->panel($request->query('fx_quote'), $request->query('fx_trade')),
+]);
+```
+
+```tsx
+import { Chargebacks, FxConverter } from '@/components/flutterwave';
+
+<Chargebacks panel={chargebacks} />
+<FxConverter panel={fx} reloadOnly={['fx']} />
+```
+
+In Blade, pass the same arrays: `<x-flutterwave-chargebacks :panel="$chargebacks" />` and `<x-flutterwave-fx :panel="$fx" />`. The Blade versions work without JavaScript, and use a required checkbox in place of the confirm step.
+
+- **Chargebacks** shows how long is left to respond, highlighted when it's under two hours, plus the customer's reason and the history. Disputing uploads one JPEG, PNG or PDF under 8MB, checked in the browser and again on the server. Accepting asks for a reason. Without the routes, the list is read-only.
+- **FX converter** walks through each step: request a rate, wait while it's priced, review the rate with a 5-minute countdown, confirm the trade, then watch it until it settles. While a quote or trade is pending, it checks for updates by itself. The quote and trade IDs are kept in the `fx_quote` and `fx_trade` query parameters, so a page reload keeps your place. If Flutterwave approves less than you asked for, the converter says so before you trade.
+
 ## Split payments
 
 ```php

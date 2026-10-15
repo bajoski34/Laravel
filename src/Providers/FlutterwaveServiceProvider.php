@@ -22,8 +22,12 @@ use Flutterwave\Payments\Console\ResendWebhookCommand;
 use Flutterwave\Payments\Console\ResolveAccountCommand;
 use Flutterwave\Payments\Console\VerifyTransactionCommand;
 use Flutterwave\Payments\Flutterwave;
+use Flutterwave\Payments\Http\Controllers\ChargebackController;
+use Flutterwave\Payments\Http\Controllers\FxController;
 use Flutterwave\Payments\Http\Controllers\WebhookController;
 use Flutterwave\Payments\Http\Middleware\VerifyWebhookSignature;
+use Flutterwave\Payments\View\Components\Chargebacks;
+use Flutterwave\Payments\View\Components\FxConverter;
 use Flutterwave\Payments\View\Components\PayButton;
 use Flutterwave\Payments\View\Components\VirtualAccount;
 use Illuminate\Support\Facades\Blade;
@@ -37,6 +41,8 @@ final class FlutterwaveServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'flutterwave');
         Blade::component('flutterwave-button', PayButton::class);
         Blade::component('flutterwave-virtual-account', VirtualAccount::class);
+        Blade::component('flutterwave-chargebacks', Chargebacks::class);
+        Blade::component('flutterwave-fx', FxConverter::class);
 
         $this->publishes([
             __DIR__.'/../config/flutterwave.php' => config_path('flutterwave.php'),
@@ -59,6 +65,7 @@ final class FlutterwaveServiceProvider extends ServiceProvider
         }
 
         $this->registerRoutes();
+        $this->registerAdminRouteMacro();
 
         if ($this->app->runningInConsole()) {
             $this->commands([
@@ -98,6 +105,23 @@ final class FlutterwaveServiceProvider extends ServiceProvider
         });
 
         $this->app->alias('flutterwave', Flutterwave::class);
+    }
+
+    /**
+     * Route::flutterwaveAdmin() registers the endpoints behind the chargeback and FX
+     * components. They refund customers and move money, so call it inside your own
+     * authenticated route group. Each action also checks the `flutterwave.manage` ability.
+     */
+    private function registerAdminRouteMacro(): void
+    {
+        Route::macro('flutterwaveAdmin', function (string $prefix = 'flutterwave') {
+            Route::prefix($prefix)->name('flutterwave.')->group(function () {
+                Route::post('chargebacks/{chargeback}/accept', [ChargebackController::class, 'accept'])->name('chargebacks.accept');
+                Route::post('chargebacks/{chargeback}/decline', [ChargebackController::class, 'decline'])->name('chargebacks.decline');
+                Route::post('fx/quotes', [FxController::class, 'quote'])->name('fx.quote');
+                Route::post('fx/trades', [FxController::class, 'trade'])->name('fx.trade');
+            });
+        });
     }
 
     private function registerRoutes(): void

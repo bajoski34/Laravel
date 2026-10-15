@@ -97,14 +97,16 @@ it('publishes the inertia components for each framework', function (string $fram
 
     $published = array_map('basename', glob($target.'/*'));
     sort($published);
-    expect($published)->toBe($files);
 
+    // Clean up before asserting, so a failure here can't leave files behind for other tests.
     app('files')->deleteDirectory($target);
     @unlink(config_path('flutterwave.php'));
+
+    expect($published)->toBe($files);
 })->with([
-    'react' => ['react', ['checkout.ts', 'flutterwave-pay-button.tsx', 'format.ts', 'index.ts', 'types.ts', 'use-flutterwave-checkout.ts', 'virtual-account.tsx']],
-    'vue' => ['vue', ['FlutterwavePayButton.vue', 'VirtualAccount.vue', 'checkout.ts', 'format.ts', 'index.ts', 'types.ts', 'useFlutterwaveCheckout.ts']],
-    'svelte' => ['svelte', ['FlutterwavePayButton.svelte', 'VirtualAccount.svelte', 'checkout.ts', 'format.ts', 'index.ts', 'types.ts']],
+    'react' => ['react', ['admin.ts', 'chargebacks.tsx', 'checkout.ts', 'flutterwave-pay-button.tsx', 'format.ts', 'fx-converter.tsx', 'index.ts', 'types.ts', 'use-flutterwave-checkout.ts', 'virtual-account.tsx']],
+    'vue' => ['vue', ['ChargebackItem.vue', 'Chargebacks.vue', 'FlutterwavePayButton.vue', 'FxConverter.vue', 'VirtualAccount.vue', 'admin.ts', 'checkout.ts', 'format.ts', 'index.ts', 'types.ts', 'useFlutterwaveCheckout.ts']],
+    'svelte' => ['svelte', ['ChargebackItem.svelte', 'Chargebacks.svelte', 'FlutterwavePayButton.svelte', 'FxConverter.svelte', 'VirtualAccount.svelte', 'admin.ts', 'checkout.ts', 'format.ts', 'index.ts', 'types.ts']],
 ]);
 
 it('refuses to publish more than one framework before changing anything', function () {

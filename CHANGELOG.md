@@ -36,6 +36,7 @@ The biggest release so far: most of the Flutterwave v3 API, webhooks as Laravel 
 - `chargebacks()`: list and look up chargebacks, accept them, or decline them with proof. `declineWithProof()` uploads the evidence and disputes in one call, after checking that the file is a JPEG, PNG or PDF under 8MB.
 - `fx()`: request FX quotes and trade them. `tradeIfReady()` re-checks that a quote hasn't expired before trading it.
 - Artisan commands for both: `flutterwave:chargebacks`, `flutterwave:accept-chargeback`, `flutterwave:decline-chargeback`, `flutterwave:fx-quote`, `flutterwave:fx-trade` and `flutterwave:fx-status`. Commands that refund a customer or move money ask for confirmation, and need `--force` when run without a terminal.
+- Admin components for both, in Blade, React, Vue and Svelte: `Chargebacks` (respond-by countdown, accept, dispute with proof) and `FxConverter` (rate, 5-minute countdown, confirm, follow the trade). `chargebacks()->panel()` and `fx()->panel()` build their data. The endpoints behind them are opt-in with `Route::flutterwaveAdmin()`, and every action needs the `flutterwave.manage` ability, so nothing is reachable until you set both up.
 
 **Webhooks**
 - Automatic `POST /flutterwave/webhook` route. Signatures are checked against `FLW_SECRET_HASH` using either the `verif-hash` header or the HMAC `flutterwave-signature` header.

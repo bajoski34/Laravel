@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Flutterwave\Payments\Services;
 
+use Flutterwave\Payments\Exception\FlutterwaveException;
 use Flutterwave\Payments\Exception\InvalidArgument;
+use Illuminate\Support\Facades\Route;
 use SplFileInfo;
 
 /**
@@ -81,6 +83,62 @@ class Chargebacks extends Service
         $this->requireComment($comment);
 
         return $this->decline($id, $comment, (string) ($this->uploadProof($file)['data'] ?? ''));
+    }
+
+    /**
+     * Everything the chargeback components need, as one array: e.g. an Inertia prop
+     * or the :panel of <x-flutterwave-chargebacks>. API errors come back in `error`
+     * instead of being thrown, so a failed lookup doesn't break the page.
+     */
+    public function panel(array $filters = []): array
+    {
+        try {
+            $response = $this->all($filters);
+            $error = null;
+        } catch (FlutterwaveException $e) {
+            $response = [];
+            $error = $e->getMessage();
+        }
+
+        return [
+            'items' => array_map(fn (array $chargeback) => $this->present($chargeback), $response['data'] ?? []),
+            'page' => $response['meta']['page_info'] ?? null,
+            'error' => $error,
+            'proof' => ['types' => self::PROOF_TYPES, 'max_bytes' => self::MAX_PROOF_BYTES],
+        ];
+    }
+
+    private function present(array $chargeback): array
+    {
+        $status = strtolower((string) ($chargeback['status'] ?? ''));
+        $due = strtotime((string) ($chargeback['due_date'] ?? '')) ?: null;
+        $open = in_array($status, ['initiated', 'pending'], true);
+        $canRespond = $open && Route::has('flutterwave.chargebacks.accept');
+
+        return [
+            'id' => $chargeback['id'] ?? null,
+            'amount' => $chargeback['amount'] ?? null,
+            'status' => $status,
+            'stage' => $chargeback['stage'] ?? null,
+            'comment' => $chargeback['comment'] ?? null,
+            'flw_ref' => $chargeback['flw_ref'] ?? null,
+            'tx_ref' => $chargeback['tx_ref'] ?? null,
+            'transaction_id' => $chargeback['transaction_id'] ?? null,
+            'due_at' => $due ? date(DATE_ATOM, $due) : null,
+            // Seconds left to respond, counted on the server so the browser's clock doesn't matter.
+            'respond_within' => $open && $due ? max(0, $due - time()) : null,
+            'proof' => $chargeback['meta']['uploaded_proof'] ?? null,
+            'history' => array_map(static fn (array $entry) => [
+                'action' => $entry['action'] ?? null,
+                'date' => $entry['date'] ?? null,
+                'description' => $entry['description'] ?? null,
+                'comment' => $entry['comment'] ?? null,
+            ], $chargeback['meta']['history'] ?? []),
+            'urls' => $canRespond ? [
+                'accept' => route('flutterwave.chargebacks.accept', $chargeback['id']),
+                'decline' => route('flutterwave.chargebacks.decline', $chargeback['id']),
+            ] : null,
+        ];
     }
 
     private function respond(int|string $id, array $payload): array
