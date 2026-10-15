@@ -344,6 +344,9 @@
     .steps > article{grid-template-columns:28px minmax(0,1fr);gap:12px;padding:18px 16px}
     .fix .in{padding:14px 16px 16px 20px}
   }
+
+  /* The PDF keeps links clickable, so the footer doesn't print raw URLs after them. */
+  @media print{ footer a::after{content:none !important} }
 </style>
 </head>
 <body>
