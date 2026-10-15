@@ -115,7 +115,7 @@ const faqs = [
   <div class="landing">
     <section class="hero">
       <div class="hero__copy">
-        <h1 class="hero__title">Take payments across Africa from your Laravel app</h1>
+        <h1 class="hero__title">Take payments across Africa and Beyond from your Laravel app</h1>
         <p class="hero__lead">
           One facade for checkout, payouts, subscriptions and virtual accounts. Webhooks arrive verified and
           deduplicated, as ordinary Laravel events.
