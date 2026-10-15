@@ -8,3 +8,4 @@
 .gitignore export-ignore
 CHANGELOG.md export-ignore
 phpunit.xml export-ignore
+/docs export-ignore
