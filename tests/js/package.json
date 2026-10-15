@@ -9,16 +9,16 @@
         "typecheck:svelte": "node prepare.js svelte && svelte-check --tsconfig ./tsconfig.svelte.json --fail-on-warnings"
     },
     "devDependencies": {
-        "@inertiajs/react": "3.7.1",
-        "@inertiajs/svelte": "3.7.1",
-        "@inertiajs/vue3": "3.7.1",
+        "@inertiajs/react": "3.9.1",
+        "@inertiajs/svelte": "3.9.1",
+        "@inertiajs/vue3": "3.9.1",
         "@types/react": "19.3.0",
         "react": "19.3.0",
         "react-dom": "19.3.0",
-        "svelte": "5.57.1",
+        "svelte": "5.57.2",
         "svelte-check": "4.7.6",
-        "typescript": "6.0.3",
+        "typescript": "7.0.2",
         "vue": "3.5.43",
-        "vue-tsc": "3.3.11"
+        "vue-tsc": "3.3.13"
     }
 }
