@@ -3,6 +3,21 @@
 All notable changes to `abraham-flutterwave/laravel-payment` are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [2.3.1] - 2026-10-15
+
+Maintenance and supply-chain hardening. No changes to the package's code or behaviour.
+
+### Changed
+- `Flutterwave::VERSION` (sent in the API User-Agent) is now `2.3.1`.
+- Removed the `post-autoload-dump` script from `composer.json`. It ran `testbench package:discover` while developing the package; it never ran in apps that install it, so nothing changes for you.
+
+### Added
+- `SECURITY.md`: supported versions and how to report a vulnerability privately.
+- A [documentation site](https://bajoski34.github.io/Laravel/guide/getting-started), linked from the README, with a downloadable developer quickstart (PDF and HTML).
+
+### Security
+- Every GitHub Actions step is pinned to a full commit SHA, and Dependabot keeps the actions, docs and frontend test dependencies up to date.
+
 ## [2.3.0] - 2026-10-15
 
 Saved cards, bill payments, wallets, chargebacks, FX trades and BVN checks, plus components for React, Vue and Svelte, admin screens, and `Flutterwave::fake()` for testing. Code written for 2.2 keeps working; see **Changed** for behaviour you might notice.
@@ -147,6 +162,7 @@ The biggest release so far: most of the Flutterwave v3 API, webhooks as Laravel 
 ### Fixed
 - Missing `Exception` import and error page styling.
 
+[2.3.1]: https://github.com/bajoski34/Laravel/compare/2.3.0...2.3.1
 [2.3.0]: https://github.com/bajoski34/Laravel/compare/2.2.0...2.3.0
 [2.2.0]: https://github.com/bajoski34/Laravel/compare/2.1.1...2.2.0
 [2.1.1]: https://github.com/bajoski34/Laravel/compare/2.1.0...2.1.1
