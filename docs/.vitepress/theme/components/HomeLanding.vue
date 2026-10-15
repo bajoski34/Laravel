@@ -266,7 +266,7 @@ h2 {
   font-family: var(--serif);
   font-weight: 400;
   letter-spacing: -0.015em;
-  color: var(--vp-c-text-1);
+  color: var(--fw-heading);
   margin: 0;
   border: 0;
   padding: 0;
@@ -524,7 +524,7 @@ h2 {
   font-family: var(--serif);
   font-size: 22px;
   line-height: 1.25;
-  color: var(--vp-c-text-1);
+  color: var(--fw-heading);
   transition: color 0.15s;
 }
 

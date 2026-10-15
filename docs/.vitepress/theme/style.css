@@ -18,9 +18,14 @@
   --vp-button-brand-hover-text: #1a1a1a;
   --vp-button-brand-active-text: #1a1a1a;
   --vp-button-brand-hover-bg: #e08c00;
+
+  /* Headings: Flutterwave navy. */
+  --fw-heading: #262c55;
 }
 
 .dark {
+  /* #262c55 disappears on a dark background, so headings use a light tint of the same hue. */
+  --fw-heading: #d9dcf5;
   --vp-c-brand-1: #ffb340;
   --vp-c-brand-2: #ffa31f;
   --vp-c-brand-3: #ff9b00;
@@ -33,162 +38,47 @@
   letter-spacing: -0.015em;
 }
 
+.vp-doc h1,
+.vp-doc h2,
+.vp-doc h3,
+.vp-doc h4 {
+  color: var(--fw-heading);
+}
+
 /* The landing page draws its own full-width sections. */
 .landing-page .VPHome {
   padding-bottom: 0 !important;
   margin-bottom: 0 !important;
 }
 
-/* Shared look for the interactive tools. */
-.tool {
-  margin: 24px 0;
-  padding: 20px;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 12px;
-  background: var(--vp-c-bg-soft);
+/* ---------------------------------------------------------------- Copy page menu */
+
+/* Copy and the dropdown are enough; downloading is a click away in "View as Markdown". */
+.page-actions .download-btn {
+  display: none !important;
 }
 
-.tool__title {
-  margin: 0 0 4px;
-  font-weight: 600;
-  font-size: 15px;
+.page-actions .markdown-copy-buttons {
+  margin-bottom: 0;
 }
 
-.tool__hint {
-  margin: 0 0 16px;
-  font-size: 13px;
-  color: var(--vp-c-text-2);
-}
-
-.tool__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px 16px;
-}
-
-.tool label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--vp-c-text-1);
-}
-
-.tool label.tool__check {
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  font-weight: 400;
-}
-
-.tool input[type='text'],
-.tool input[type='number'],
-.tool input[type='email'],
-.tool select,
-.tool textarea {
-  width: 100%;
-  padding: 6px 10px;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 6px;
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
-  font-size: 13px;
-  font-family: inherit;
-}
-
-.tool textarea {
-  font-family: var(--vp-font-family-mono);
-  min-height: 120px;
-  resize: vertical;
-}
-
-.tool input:focus,
-.tool select:focus,
-.tool textarea:focus {
-  outline: none;
-  border-color: var(--vp-c-brand-1);
-}
-
-.tool small {
-  font-weight: 400;
-  color: var(--vp-c-text-2);
-}
-
-.tool__tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 16px;
-}
-
-.tool__tab {
-  padding: 4px 12px;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 999px;
-  font-size: 13px;
-  background: var(--vp-c-bg);
-  cursor: pointer;
-}
-
-.tool__tab[aria-pressed='true'] {
-  border-color: var(--vp-c-brand-1);
-  background: var(--vp-c-brand-soft);
-  color: var(--vp-c-brand-1);
-  font-weight: 500;
-}
-
-.tool__out {
-  position: relative;
-  margin-top: 16px;
-}
-
-.tool__out pre {
+.page-actions .markdown-copy-buttons-inner {
   margin: 0;
-  padding: 14px 16px;
-  border-radius: 8px;
-  background: var(--vp-code-block-bg);
-  overflow-x: auto;
-  font-size: 13px;
-  line-height: 1.6;
-  font-family: var(--vp-font-family-mono);
-  white-space: pre;
 }
 
-.tool__copy {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  padding: 2px 10px;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 6px;
-  background: var(--vp-c-bg);
-  font-size: 12px;
-  cursor: pointer;
+/* Wide screens: above "On this page". Narrower: at the top of the page, where the aside is hidden. */
+.page-actions--aside {
+  padding-bottom: 20px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--vp-c-divider);
 }
 
-.tool__status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 12px;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
+.page-actions--top {
+  margin-bottom: 8px;
 }
 
-.tool__status--ok {
-  background: var(--vp-c-green-soft);
-  color: var(--vp-c-green-1);
-}
-
-.tool__status--bad {
-  background: var(--vp-c-red-soft);
-  color: var(--vp-c-red-1);
-}
-
-.tool__status--idle {
-  background: var(--vp-c-default-soft);
-  color: var(--vp-c-text-2);
+@media (min-width: 1280px) {
+  .page-actions--top {
+    display: none;
+  }
 }
