@@ -129,7 +129,7 @@ it('accepts and declines chargebacks for allowed users', function () {
         ->assertSessionHas('flutterwave.status', 'Chargeback 1599 accepted. The customer will be refunded.');
 
     $this->actingAs(admin())->from('/admin/disputes')
-        ->post('/admin/flutterwave/chargebacks/1603/decline', ['comment' => 'Signed for.', 'proof' => UploadedFile::fake()->create('delivery.pdf', 120, 'application/pdf')])
+        ->post('/admin/flutterwave/chargebacks/1603/decline', ['comment' => 'Signed for.', 'proof' => UploadedFile::fake()->createWithContent('delivery.pdf', '%PDF-1.4 signed delivery note')])
         ->assertRedirect('/admin/disputes')
         ->assertSessionHas('flutterwave.status');
 

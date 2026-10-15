@@ -2,6 +2,7 @@
 
 use Flutterwave\Payments\Exception\InvalidArgument;
 use Flutterwave\Payments\Facades\Flutterwave;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -118,6 +119,23 @@ it('refuses to publish more than one framework before changing anything', functi
 
     expect(file_exists(config_path('flutterwave.php')))->toBeFalse()
         ->and(is_dir(resource_path('js/components/flutterwave')))->toBeFalse();
+});
+
+it('keeps -- out of command argument descriptions', function () {
+    // Laravel 9 parses any signature token containing -- as an option, so an argument
+    // described as "... with --trade" registers that option twice and breaks artisan.
+    $commands = collect(Artisan::all())->filter(fn ($command, string $name) => str_starts_with($name, 'flutterwave:'));
+
+    expect($commands)->not->toBeEmpty();
+
+    $commands->each(function ($command, string $name) {
+        $signature = (string) (new ReflectionProperty($command, 'signature'))->getValue($command);
+        preg_match_all('/\{\s*([^-\s][^}]*)\}/', $signature, $arguments);
+
+        foreach ($arguments[1] as $argument) {
+            expect(str_contains($argument, '--'))->toBeFalse("{$name}: the argument description \"{$argument}\" mentions an option with --");
+        }
+    });
 });
 
 it('requires a public key for inline checkout', function () {

@@ -93,18 +93,34 @@ it('does not decline when the proof upload fails', function () {
     unlink($path);
 });
 
-it('checks chargeback responses before calling the api', function (Closure $call, string $message) {
+// Datasets hold plain data, not closures: Pest 1 and 2 call closures in a dataset while building it.
+// '@name' or '@name:bytes' arguments become proof files, created when the test runs.
+function proofArguments(array $arguments): array
+{
+    return array_map(static function ($argument) {
+        if (! is_string($argument) || ! str_starts_with($argument, '@')) {
+            return $argument;
+        }
+
+        [$name, $bytes] = array_pad(explode(':', substr($argument, 1)), 2, 2048);
+
+        return proofFile($name, (int) $bytes);
+    }, $arguments);
+}
+
+it('checks chargeback responses before calling the api', function (string $method, array $arguments, string $message) {
     Http::fake();
 
-    expect($call)->toThrow(InvalidArgument::class, $message);
+    expect(fn () => Flutterwave::chargebacks()->{$method}(...proofArguments($arguments)))->toThrow(InvalidArgument::class, $message);
     Http::assertNothingSent();
 })->with([
-    'empty comment' => [fn () => Flutterwave::chargebacks()->accept(1, '  '), 'needs a comment'],
-    'decline without proof' => [fn () => Flutterwave::chargebacks()->decline(1, 'Delivered.', ''), 'needs a proof link'],
-    'missing file' => [fn () => Flutterwave::chargebacks()->uploadProof('/nope/proof.pdf'), "doesn't exist"],
-    'wrong file type' => [fn () => Flutterwave::chargebacks()->uploadProof(proofFile('proof.docx')), 'JPEG, PNG or PDF'],
-    'file too large' => [fn () => Flutterwave::chargebacks()->uploadProof(proofFile('scan.jpg', 8 * 1024 * 1024)), 'smaller than 8MB'],
-    'decline with proof but no comment' => [fn () => Flutterwave::chargebacks()->declineWithProof(1, '', proofFile()), 'needs a comment'],
+    'empty comment' => ['accept', [1, '  '], 'needs a comment'],
+    'decline without proof' => ['decline', [1, 'Delivered.', ''], 'needs a proof link'],
+    'missing file' => ['uploadProof', ['/nope/proof.pdf'], "doesn't exist"],
+    'wrong file type' => ['uploadProof', ['@proof.docx'], 'JPEG, PNG or PDF'],
+    'empty file' => ['uploadProof', ['@blank.pdf:0'], 'is empty'],
+    'file too large' => ['uploadProof', ['@scan.jpg:8388608'], 'smaller than 8MB'],
+    'decline with proof but no comment' => ['declineWithProof', [1, '', '@proof.pdf'], 'needs a comment'],
 ]);
 
 it('requests quotes and trades them', function () {
@@ -145,15 +161,15 @@ it('only trades a quote that is still ready', function () {
     Http::assertSentCount(3);
 });
 
-it('checks fx requests before calling the api', function (Closure $call, string $message) {
+it('checks fx requests before calling the api', function (string $method, array $arguments, string $message) {
     Http::fake();
 
-    expect($call)->toThrow(InvalidArgument::class, $message);
+    expect(fn () => Flutterwave::fx()->{$method}(...$arguments))->toThrow(InvalidArgument::class, $message);
     Http::assertNothingSent();
 })->with([
-    'zero quantity' => [fn () => Flutterwave::fx()->quote('NGN', 'USD', 0), 'greater than zero'],
-    'same currency' => [fn () => Flutterwave::fx()->quote('usd', 'USD', 5000), 'two different currencies'],
-    'empty narration' => [fn () => Flutterwave::fx()->trade('q1', ' '), 'needs a narration'],
+    'zero quantity' => ['quote', ['NGN', 'USD', 0], 'greater than zero'],
+    'same currency' => ['quote', ['usd', 'USD', 5000], 'two different currencies'],
+    'empty narration' => ['trade', ['q1', ' '], 'needs a narration'],
 ]);
 
 it('turns quote and chargeback webhooks into events', function () {

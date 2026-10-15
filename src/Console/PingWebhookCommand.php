@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Http;
 class PingWebhookCommand extends Command
 {
     protected $signature = 'flutterwave:ping-webhook
-        {id : Transaction id, or transfer id with --event=transfer}
+        {id : Transaction id, or transfer id when the event option is transfer}
         {url? : Webhook URL, defaults to this app\'s webhook route}
         {--event=charge : charge or transfer}
         {--hash= : Secret hash to sign with, defaults to FLW_SECRET_HASH}';

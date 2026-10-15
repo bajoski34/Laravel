@@ -10,7 +10,7 @@ use Illuminate\Console\Command;
 class ResolveAccountCommand extends Command
 {
     protected $signature = 'flutterwave:resolve
-        {account : Account number, mobile money number, or merchant ID with --merchant}
+        {account : Account number, mobile money number, or merchant ID when the merchant option is set}
         {bank? : Bank or mobile money provider code, see flutterwave:banks}
         {--country= : Two-letter country code, e.g. GH for Ghanaian banks and mobile money}
         {--merchant : Treat the account as a Flutterwave merchant ID}';

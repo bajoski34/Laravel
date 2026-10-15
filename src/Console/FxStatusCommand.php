@@ -14,7 +14,7 @@ class FxStatusCommand extends Command
     use ShowsFxQuotes;
 
     protected $signature = 'flutterwave:fx-status
-        {id : Quote id, or trade id with --trade}
+        {id : Quote id, or trade id when the trade option is set}
         {--trade : Look up a trade instead of a quote}';
 
     protected $description = 'Check an FX quote or trade';

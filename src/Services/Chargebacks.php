@@ -175,6 +175,10 @@ class Chargebacks extends Service
             throw new InvalidArgument('Chargeback proof must be a JPEG, PNG or PDF file, not '.$filename.'.');
         }
 
+        if (filesize($path) === 0) {
+            throw new InvalidArgument("The chargeback proof file {$filename} is empty.");
+        }
+
         if (filesize($path) >= self::MAX_PROOF_BYTES) {
             throw new InvalidArgument('Chargeback proof must be smaller than 8MB. Compress the file, or merge fewer pages into it.');
         }
