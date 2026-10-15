@@ -5,12 +5,15 @@
 # Flutterwave for Laravel
 
 [![Tests](https://github.com/bajoski34/Laravel/actions/workflows/php.yml/badge.svg)](https://github.com/bajoski34/Laravel/actions/workflows/php.yml)
+[![Docs](https://img.shields.io/badge/docs-read%20the%20guide-ff9b00)](https://bajoski34.github.io/Laravel/guide/getting-started)
 ![Packagist Downloads](https://img.shields.io/packagist/dt/abraham-flutterwave/laravel-payment)
 ![Packagist PHP Version Support](https://img.shields.io/packagist/php-v/abraham-flutterwave/laravel-payment)
 ![GitHub stars](https://img.shields.io/github/stars/bajoski34/Laravel)
 ![Packagist License](https://img.shields.io/packagist/l/abraham-flutterwave/laravel-payment)
 
 Accept payments across Africa and beyond, send payouts, bill subscriptions and react to webhooks, all from Laravel with very little code.
+
+> **Prefer a nicer read?** Read the guides on the [documentation site](https://bajoski34.github.io/Laravel/guide/getting-started), with search and navigation.
 
 ```php
 return Flutterwave::redirect(['amount' => 5000, 'email' => 'jane@example.com']);
