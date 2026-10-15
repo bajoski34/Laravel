@@ -75,9 +75,6 @@
     },
     "scripts": {
         "test": "pest",
-        "format": "pint",
-        "post-autoload-dump": [
-            "@php ./vendor/bin/testbench package:discover --ansi"
-        ]
+        "format": "pint"
     }
 }
