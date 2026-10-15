@@ -1,0 +1,66 @@
+name: Docs
+
+on:
+  push:
+    branches: [ "2.x" ]
+    paths:
+      - 'docs/**'
+      - 'src/**'   # the reference pages are generated from the source
+      - '.github/workflows/docs.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+
+      - run: npm ci --no-audit --no-fund
+
+      - uses: actions/configure-pages@v5
+        id: pages
+        if: github.event_name != 'pull_request'
+
+      # Pages reports /Laravel for the github.io URL and an empty path for a custom domain.
+      - run: npm run build
+        env:
+          DOCS_BASE: ${{ github.event_name == 'pull_request' && '/Laravel/' || format('{0}/', steps.pages.outputs.base_path) }}
+
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: docs/.vitepress/dist
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
