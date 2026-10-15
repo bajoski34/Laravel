@@ -26,6 +26,11 @@ updates:
     directory: /tests/js
     schedule:
       interval: monthly
+    ignore:
+      # svelte-check (latest 4.7.6) only supports TypeScript 5 and 6, so TypeScript 7
+      # can't be installed with it. Remove this once svelte-check supports 7.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
     groups:
       frontend-tests:
         patterns: ['*']
