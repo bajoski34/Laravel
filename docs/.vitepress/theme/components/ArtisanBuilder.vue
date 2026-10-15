@@ -50,33 +50,46 @@ const line = computed(() => {
 
 <template>
   <div class="tool">
-    <p class="tool__title">Artisan command builder</p>
-    <p class="tool__hint">Pick a command, fill in what you need, copy the line. Arguments and options are read from the package source.</p>
-
-    <label>Command
-      <select v-model="selected">
-        <option v-for="c in list" :key="c.name" :value="c.name">{{ c.name }}  ·  {{ c.description }}</option>
-      </select>
-    </label>
-    <p class="tool__hint" style="margin: 8px 0 16px">{{ command.description }}.</p>
-
-    <div class="tool__grid">
-      <label v-for="a in command.args" :key="'a' + a.name">
-        {{ a.name }}<span v-if="!a.optional"> *</span>
-        <input v-model="values[`arg:${a.name}`]" type="text" :placeholder="a.default || (a.optional ? 'optional' : '')" />
-        <small>{{ a.help }}</small>
-      </label>
-      <label v-for="o in command.options.filter((o) => o.takesValue)" :key="'o' + o.name">
-        --{{ o.name }}
-        <input v-model="values[`opt:${o.name}`]" type="text" :placeholder="o.default ? `default ${o.default}` : ''" />
-        <small>{{ o.help }}</small>
-      </label>
-      <label v-for="o in command.options.filter((o) => !o.takesValue)" :key="'f' + o.name" class="tool__check" :title="o.help">
-        <input v-model="flags[o.name]" type="checkbox" /> --{{ o.name }} <small>{{ o.help }}</small>
-      </label>
+    <div class="tool__head">
+      <p class="tool__title">Artisan command builder</p>
+      <p class="tool__hint">Pick a command, fill in what you need and copy the line. Arguments and options are read from the package source when the docs are built.</p>
     </div>
 
-    <CodeOut :code="line" />
-    <p v-if="missing.length" class="tool__status tool__status--idle">Needs: {{ missing.join(', ') }}</p>
+    <div class="tool__body">
+      <label class="tool__field">
+        <span class="tool__label">Command</span>
+        <select v-model="selected">
+          <option v-for="c in list" :key="c.name" :value="c.name">{{ c.name }}</option>
+        </select>
+        <span class="tool__note">{{ command.description }}.</span>
+      </label>
+
+      <div v-if="command.args.length || command.options.some((o) => o.takesValue)" class="tool__fields">
+        <label v-for="a in command.args" :key="'a' + a.name" class="tool__field">
+          <span class="tool__label">{{ a.name }}<span v-if="!a.optional" aria-hidden="true"> *</span></span>
+          <input v-model="values[`arg:${a.name}`]" type="text" :placeholder="a.default || (a.optional ? 'Optional' : 'Required')" />
+          <span class="tool__note">{{ a.help }}</span>
+        </label>
+        <label v-for="o in command.options.filter((o) => o.takesValue)" :key="'o' + o.name" class="tool__field">
+          <span class="tool__label">--{{ o.name }}</span>
+          <input v-model="values[`opt:${o.name}`]" type="text" :placeholder="o.default ? `Default ${o.default}` : 'Optional'" />
+          <span class="tool__note">{{ o.help }}</span>
+        </label>
+      </div>
+
+      <div v-if="command.options.some((o) => !o.takesValue)" class="tool__row">
+        <span class="tool__label">Flags</span>
+        <div class="tool__chips">
+          <label v-for="o in command.options.filter((o) => !o.takesValue)" :key="'f' + o.name" class="tool__chip" :title="o.help">
+            <input v-model="flags[o.name]" type="checkbox" /> --{{ o.name }}
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="tool__out">
+      <p v-if="missing.length" class="tool__status tool__status--idle">Still needed: {{ missing.join(', ') }}</p>
+      <CodeOut :code="line" lang="shellscript" title="Terminal" />
+    </div>
   </div>
 </template>

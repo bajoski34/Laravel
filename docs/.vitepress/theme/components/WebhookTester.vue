@@ -87,62 +87,74 @@ const curl = computed(() =>
   ].join('\n'),
 )
 
-const php = computed(
-  () => `// Feature test: post a signed webhook to your app.
-use Flutterwave\\Payments\\Facades\\Flutterwave;
+const php = `use Flutterwave\\Payments\\Facades\\Flutterwave;
+use Flutterwave\\Payments\\Testing\\FlutterwaveFake;
 
-$body = json_encode($payload);
+it('marks the order paid when the charge completes', function () {
+    // The fake answers the package's re-verification of the charge.
+    Flutterwave::fake()->transaction(4975363, ['amount' => 5000, 'tx_ref' => 'ORDER-42']);
 
-$this->call('POST', '/flutterwave/webhook', [], [], [], [
-    'HTTP_FLUTTERWAVE_SIGNATURE' => base64_encode(hash_hmac('sha256', $body, config('flutterwave.secretHash'), true)),
-    'CONTENT_TYPE' => 'application/json',
-], $body)->assertOk();
-
-// Or with the fake, which also answers the charge re-verification:
-// Flutterwave::fake()->transaction($payload['data']['id'], ['amount' => 5000]);
-// $this->postJson('/flutterwave/webhook', $payload, FlutterwaveFake::webhookHeaders())->assertOk();`,
-)
+    $this->postJson('/flutterwave/webhook', [
+        'event' => 'charge.completed',
+        'data' => ['id' => 4975363, 'tx_ref' => 'ORDER-42', 'status' => 'successful'],
+    ], FlutterwaveFake::webhookHeaders())->assertOk();
+});`
 </script>
 
 <template>
   <div class="tool">
-    <p class="tool__title">Webhook signature tester</p>
-    <p class="tool__hint">
-      Signs a payload the way Flutterwave does (base64 HMAC-SHA256 of the raw body, keyed with your secret hash) so you can
-      check a header you received or send a test webhook to your app. Everything runs in your browser. Still, use a test secret hash here, not your live one.
-    </p>
-
-    <p v-if="!supported" class="tool__status tool__status--bad">Your browser doesn't expose Web Crypto on this page. Open the docs over https or localhost.</p>
-
-    <div class="tool__grid">
-      <label>Secret hash (FLW_SECRET_HASH)
-        <input v-model="secret" type="text" autocomplete="off" spellcheck="false" />
-      </label>
-      <label>Send to
-        <input v-model="url" type="text" spellcheck="false" />
-      </label>
+    <div class="tool__head">
+      <p class="tool__title">Webhook signature tester</p>
+      <p class="tool__hint">
+        Signs a payload the way Flutterwave does: a base64 HMAC-SHA256 of the raw body, keyed with your secret hash.
+        Check a header you received, or send a test webhook to your app. It all runs in your browser, but use a test
+        secret hash here, not your live one.
+      </p>
     </div>
 
-    <label style="margin-top: 12px">Raw request body
-      <textarea v-model="body" spellcheck="false" rows="12" />
-      <small v-if="!bodyValid" style="color: var(--vp-c-red-1)">Not valid JSON. The signature is still computed over the exact text.</small>
-    </label>
+    <div class="tool__body">
+      <p v-if="!supported" class="tool__status tool__status--bad">This browser doesn't expose Web Crypto here. Open the docs over https or localhost.</p>
 
-    <label style="margin-top: 12px">flutterwave-signature header
-      <input :value="signature || '...'" type="text" readonly />
-    </label>
+      <div class="tool__fields">
+        <label class="tool__field">
+          <span class="tool__label">Secret hash</span>
+          <input v-model="secret" type="text" autocomplete="off" spellcheck="false" />
+          <span class="tool__note">The value of <code>FLW_SECRET_HASH</code></span>
+        </label>
+        <label class="tool__field">
+          <span class="tool__label">Send to</span>
+          <input v-model="url" type="text" spellcheck="false" />
+          <span class="tool__note">Your app's webhook URL</span>
+        </label>
+      </div>
 
-    <label style="margin-top: 12px">Check a header you received (flutterwave-signature or verif-hash)
-      <input v-model="received" type="text" placeholder="paste the header value" spellcheck="false" />
-    </label>
-    <p v-if="verdict" :class="['tool__status', verdict.ok ? 'tool__status--ok' : 'tool__status--bad']">{{ verdict.text }}</p>
-    <p v-if="error" class="tool__status tool__status--bad">{{ error }}</p>
+      <label class="tool__field">
+        <span class="tool__label">Raw request body</span>
+        <textarea v-model="body" spellcheck="false" rows="12" />
+        <span v-if="!bodyValid" class="tool__note" style="color: var(--vp-c-red-1)">Not valid JSON. The signature still covers the exact text.</span>
+      </label>
 
-    <p class="tool__hint" style="margin: 16px 0 0">
-      Send it to your local app. A <code>charge.completed</code> with a made-up id gets a 500, because the package re-fetches every charge
-      from the API before firing <code>ChargeCompleted</code>. Use a real test transaction id, or <code>php artisan flutterwave:ping-webhook &lt;id&gt;</code>.
-    </p>
-    <CodeOut :code="curl" />
-    <CodeOut :code="php" />
+      <label class="tool__field">
+        <span class="tool__label">flutterwave-signature header</span>
+        <input :value="signature || 'Waiting for a secret hash'" type="text" readonly />
+      </label>
+
+      <label class="tool__field">
+        <span class="tool__label">Check a header you received</span>
+        <input v-model="received" type="text" placeholder="Paste a flutterwave-signature or verif-hash value" spellcheck="false" />
+      </label>
+      <p v-if="verdict" :class="['tool__status', verdict.ok ? 'tool__status--ok' : 'tool__status--bad']">{{ verdict.text }}</p>
+      <p v-if="error" class="tool__status tool__status--bad">{{ error }}</p>
+    </div>
+
+    <div class="tool__out">
+      <p class="tool__out-label">
+        Send it to your local app. A <code>charge.completed</code> with a made-up id gets a 500, because the package
+        re-fetches every charge from the API before firing <code>ChargeCompleted</code>. Use a real test transaction id,
+        or <code>php artisan flutterwave:ping-webhook &lt;id&gt;</code>.
+      </p>
+      <CodeOut :code="curl" lang="shellscript" title="Terminal" />
+      <CodeOut :code="php" lang="php" title="tests/Feature/WebhookTest.php" />
+    </div>
   </div>
 </template>

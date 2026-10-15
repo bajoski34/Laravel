@@ -1,7 +1,12 @@
 import { defineConfig } from 'vitepress'
+import llmstxt from 'vitepress-plugin-llms'
 
 // GitHub Pages serves project sites from /<repo>/. Override with DOCS_BASE=/ for a custom domain.
 const base = process.env.DOCS_BASE ?? '/Laravel/'
+
+// Where the site is served, for the sitemap and the absolute links in llms.txt.
+// Set DOCS_ORIGIN when moving to a custom domain.
+const origin = process.env.DOCS_ORIGIN ?? 'https://bajoski34.github.io'
 
 export default defineConfig({
   base,
@@ -16,8 +21,28 @@ export default defineConfig({
     ['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}logo.svg` }],
   ],
 
-  // The fonts live in the package's src/, one level above the docs.
-  vite: { server: { fs: { allow: ['..'] } } },
+  sitemap: { hostname: `${origin}${base}` },
+
+  vite: {
+    // The fonts live in the package's src/, one level above the docs.
+    server: { fs: { allow: ['..'] } },
+    plugins: [
+      // llms.txt, llms-full.txt and a Markdown copy of every page, for AI tools and crawlers.
+      // The "Copy page" menu reads those per-page .md files.
+      llmstxt({
+        domain: origin, // the plugin adds the base path itself
+        // Purely interactive, so empty as text.
+        ignoreFiles: ['tools/index.md'],
+        customTemplateVariables: {
+          title: 'Flutterwave for Laravel',
+          description:
+            'The Laravel package for Flutterwave (abraham-flutterwave/laravel-payment): checkout, payouts, subscriptions, webhooks and more from one facade.',
+          details:
+            'Install with `composer require abraham-flutterwave/laravel-payment`, then `php artisan flutterwave:install`. Supports PHP 8.1+ and Laravel 9 to 13. Every page below is also available as Markdown by adding .md to its URL.',
+        },
+      }),
+    ],
+  },
 
   markdown: {
     theme: { light: 'github-light', dark: 'github-dark' },
@@ -25,6 +50,14 @@ export default defineConfig({
 
   themeConfig: {
     logo: '/logo.svg',
+
+    // Labels for the "Copy page" menu.
+    llms: {
+      copyText: 'Copy page',
+      copiedText: 'Copied',
+      viewMarkdownText: 'View as Markdown',
+      openInAIText: 'Open in {provider}',
+    },
 
     nav: [
       { text: 'Guide', link: '/guide/getting-started', activeMatch: '/guide/' },

@@ -1,22 +1,25 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue'
 import CodeOut from './CodeOut.vue'
+import type { CodeLang } from '../highlight'
 
-type Mode = 'hosted' | 'inline' | 'inertia-react' | 'inertia-vue' | 'inertia-svelte'
+type Mode = 'hosted' | 'inline' | 'react' | 'vue' | 'svelte'
 
 const modes: { id: Mode; label: string }[] = [
   { id: 'hosted', label: 'Hosted page' },
-  { id: 'inline', label: 'Inline modal (Blade)' },
-  { id: 'inertia-react', label: 'Inertia + React' },
-  { id: 'inertia-vue', label: 'Inertia + Vue' },
-  { id: 'inertia-svelte', label: 'Inertia + Svelte' },
+  { id: 'inline', label: 'Inline modal' },
+  { id: 'react', label: 'Inertia + React' },
+  { id: 'vue', label: 'Inertia + Vue' },
+  { id: 'svelte', label: 'Inertia + Svelte' },
 ]
+
+const currencies = ['NGN', 'GHS', 'KES', 'UGX', 'TZS', 'ZAR', 'RWF', 'XAF', 'XOF', 'USD', 'EUR', 'GBP']
 
 const form = reactive({
   mode: 'hosted' as Mode,
+  source: 'order' as 'order' | 'example',
   amount: 5000,
   currency: 'NGN',
-  fromOrder: true,
   name: false,
   phone: false,
   meta: true,
@@ -24,91 +27,202 @@ const form = reactive({
   options: '',
 })
 
-const php = computed(() => {
-  const amount = form.fromOrder ? '$order->total' : String(form.amount || 0)
-  const currency = form.fromOrder ? '$order->currency' : `'${form.currency}'`
-  const email = form.fromOrder ? '$order->user->email' : "'customer@example.com'"
-  const ref = form.fromOrder ? "    'tx_ref' => $order->reference,      // your own reference, so you can match it later\n" : ''
+const fromOrder = computed(() => form.source === 'order')
+const inertia = computed(() => form.mode === 'react' || form.mode === 'vue' || form.mode === 'svelte')
 
-  const lines = [ref + `    'amount' => ${amount},`, `    'currency' => ${currency},`]
+const indent = (text: string, by: number) => text.replace(/\n/g, '\n' + ' '.repeat(by))
+
+const payload = computed(() => {
+  const o = fromOrder.value
+  const email = o ? '$order->user->email' : "'customer@example.com'"
+  const lines: string[] = []
+
+  if (o) lines.push("    // Your own reference, to match the payment later.", "    'tx_ref' => $order->reference,")
+  lines.push(`    'amount' => ${o ? '$order->total' : form.amount || 0},`)
+  lines.push(`    'currency' => ${o ? '$order->currency' : `'${form.currency}'`},`)
 
   if (form.name || form.phone) {
     // With a customer array, the email goes inside it.
-    const customer = [`        'email' => ${email},`]
-    if (form.name) customer.push(`        'name' => ${form.fromOrder ? '$order->user->name' : "'Ada Lovelace'"},`)
-    if (form.phone) customer.push(`        'phone_number' => ${form.fromOrder ? '$order->user->phone' : "'08012345678'"},`)
-    lines.push(`    'customer' => [\n${customer.join('\n')}\n    ],`)
+    const c = [`        'email' => ${email},`]
+    if (form.name) c.push(`        'name' => ${o ? '$order->user->name' : "'Ada Lovelace'"},`)
+    if (form.phone) c.push(`        'phone_number' => ${o ? '$order->user->phone' : "'08012345678'"},`)
+    lines.push(`    'customer' => [\n${c.join('\n')}\n    ],`)
   } else {
     lines.push(`    'email' => ${email},`)
   }
 
-  if (form.meta) lines.push(`    'meta' => ['order_id' => ${form.fromOrder ? '$order->id' : '123'}],`)
-  if (form.subaccount) lines.push(`    'subaccounts' => [['id' => 'RS_XXXXXXXX']],  // split the payment`)
+  if (form.meta) lines.push(`    'meta' => ['order_id' => ${o ? '$order->id' : '42'}],`)
+  if (form.subaccount) lines.push("    'subaccounts' => [['id' => 'RS_XXXXXXXX']],")
   if (form.options.trim()) lines.push(`    'payment_options' => '${form.options.trim()}',`)
 
-  const payload = `[\n${lines.join('\n')}\n]`
-  const sig = form.fromOrder ? 'Order $order' : 'Request $request'
-  const head = `use Flutterwave\\Payments\\Facades\\Flutterwave;\n`
+  return `[\n${lines.join('\n')}\n]`
+})
 
+const php = computed(() => {
+  const arg = fromOrder.value ? 'Order $order' : 'Request $request'
+  const use = 'use Flutterwave\\Payments\\Facades\\Flutterwave;'
+
+  if (form.mode === 'hosted') {
+    return `${use}
+
+public function pay(${arg})
+{
+    // Sends the customer to Flutterwave's hosted checkout.
+    // Inertia form posts work too, with no extra code.
+    return Flutterwave::redirect(${indent(payload.value, 4)});
+}`
+  }
+
+  if (form.mode === 'inline') {
+    return `${use}
+
+public function pay(${arg})
+{
+    $payment_details = Flutterwave::render('inline', ${indent(payload.value, 4)});
+
+    // The package's view opens the modal when the page loads.
+    return view('flutterwave::modal', compact('payment_details'));
+}`
+  }
+
+  return `${use}
+use Inertia\\Inertia;
+
+public function show(${arg})
+{
+    return Inertia::render('Checkout', [
+        // Built on the server, so the amount can't be changed in the browser.
+        'checkout' => Flutterwave::inlineConfig(${indent(payload.value, 8)}),
+    ]);
+}`
+})
+
+const label = computed(() => (fromOrder.value ? 'Pay now' : `Pay ${form.currency} ${form.amount}`))
+const onSuccess = "(payment) => router.post('/orders/confirm', { transaction_id: payment.transaction_id })"
+
+const page = computed<{ code: string; lang: CodeLang; title: string } | null>(() => {
   switch (form.mode) {
-    case 'hosted':
-      return `${head}\npublic function pay(${sig})\n{\n    // Sends the customer to Flutterwave's hosted checkout.\n    // Works with Inertia too: it returns a 409 + X-Inertia-Location for XHR requests.\n    return Flutterwave::redirect(${indent(payload)});\n}`
-    case 'inline':
-      return `${head}\npublic function pay(${sig})\n{\n    $payment_details = Flutterwave::render('inline', ${indent(payload)});\n\n    // The package's view opens the modal as soon as the page loads.\n    return view('flutterwave::modal', compact('payment_details'));\n}`
+    case 'react':
+      return {
+        lang: 'tsx',
+        title: 'resources/js/Pages/Checkout.tsx',
+        code: `import { router } from '@inertiajs/react';
+import { FlutterwavePayButton, type FlutterwaveCheckoutConfig } from '@/components/flutterwave';
+
+export default function Checkout({ checkout }: { checkout: FlutterwaveCheckoutConfig }) {
+    return (
+        <FlutterwavePayButton
+            config={checkout}
+            onSuccess={${onSuccess}}
+        >
+            ${label.value}
+        </FlutterwavePayButton>
+    );
+}`,
+      }
+    case 'vue':
+      return {
+        lang: 'vue',
+        title: 'resources/js/Pages/Checkout.vue',
+        code: `<script setup lang="ts">
+import { router } from '@inertiajs/vue3';
+import { FlutterwavePayButton, type FlutterwaveCheckoutConfig } from '@/components/flutterwave';
+
+defineProps<{ checkout: FlutterwaveCheckoutConfig }>();
+<\/script>
+
+<template>
+    <FlutterwavePayButton
+        :config="checkout"
+        :on-success="${onSuccess}"
+    >
+        ${label.value}
+    </FlutterwavePayButton>
+</template>`,
+      }
+    case 'svelte':
+      return {
+        lang: 'svelte',
+        title: 'resources/js/Pages/Checkout.svelte',
+        code: `<script lang="ts">
+    import { router } from '@inertiajs/svelte';
+    import { FlutterwavePayButton, type FlutterwaveCheckoutConfig } from '@/components/flutterwave';
+
+    let { checkout }: { checkout: FlutterwaveCheckoutConfig } = $props();
+<\/script>
+
+<FlutterwavePayButton
+    config={checkout}
+    onSuccess={${onSuccess}}
+>
+    ${label.value}
+</FlutterwavePayButton>`,
+      }
     default:
-      return `${head}use Inertia\\Inertia;\n\npublic function show(${sig})\n{\n    return Inertia::render('Checkout', [\n        // Built on the server, so the amount can't be changed in the browser.\n        'checkout' => Flutterwave::inlineConfig(${indent(payload, 8)}),\n    ]);\n}`
+      return null
   }
 })
 
-const frontend = computed(() => {
-  const label = form.fromOrder ? 'Pay now' : `Pay ${form.currency} ${form.amount}`
-  switch (form.mode) {
-    case 'inertia-react':
-      return `// resources/js/Pages/Checkout.tsx\nimport { router } from '@inertiajs/react';\nimport { FlutterwavePayButton, type FlutterwaveCheckoutConfig } from '@/components/flutterwave';\n\nexport default function Checkout({ checkout }: { checkout: FlutterwaveCheckoutConfig }) {\n    return (\n        <FlutterwavePayButton\n            config={checkout}\n            onSuccess={(payment) => router.post('/orders/confirm', { transaction_id: payment.transaction_id })}\n        >\n            ${label}\n        </FlutterwavePayButton>\n    );\n}`
-    case 'inertia-vue':
-      return `<!-- resources/js/Pages/Checkout.vue -->\n<script setup lang="ts">\nimport { router } from '@inertiajs/vue3';\nimport { FlutterwavePayButton, type FlutterwaveCheckoutConfig } from '@/components/flutterwave';\n\ndefineProps<{ checkout: FlutterwaveCheckoutConfig }>();\n<\/script>\n\n<template>\n    <FlutterwavePayButton\n        :config="checkout"\n        :on-success="(payment) => router.post('/orders/confirm', { transaction_id: payment.transaction_id })"\n    >\n        ${label}\n    </FlutterwavePayButton>\n</template>`
-    case 'inertia-svelte':
-      return `<!-- resources/js/Pages/Checkout.svelte -->\n<script lang="ts">\n    import { router } from '@inertiajs/svelte';\n    import { FlutterwavePayButton, type FlutterwaveCheckoutConfig } from '@/components/flutterwave';\n\n    let { checkout }: { checkout: FlutterwaveCheckoutConfig } = $props();\n<\/script>\n\n<FlutterwavePayButton\n    config={checkout}\n    onSuccess={(payment) => router.post('/orders/confirm', { transaction_id: payment.transaction_id })}\n>\n    ${label}\n</FlutterwavePayButton>`
-    default:
-      return ''
-  }
-})
-
-const install = computed(() => {
-  const flag = { 'inertia-react': '--react', 'inertia-vue': '--vue', 'inertia-svelte': '--svelte' }[form.mode as string]
-  return flag ? `php artisan flutterwave:install ${flag}` : ''
-})
-
-function indent(text: string, by = 4) {
-  return text.replace(/\n/g, '\n' + ' '.repeat(by))
-}
+const install = computed(() => (inertia.value ? `php artisan flutterwave:install --${form.mode}` : ''))
 </script>
 
 <template>
   <div class="tool">
-    <p class="tool__title">Checkout builder</p>
-    <p class="tool__hint">Choose how you want to take the payment and get the controller (and page) code for it.</p>
-
-    <div class="tool__tabs" role="group" aria-label="Checkout type">
-      <button v-for="m in modes" :key="m.id" type="button" class="tool__tab" :aria-pressed="form.mode === m.id" @click="form.mode = m.id">{{ m.label }}</button>
+    <div class="tool__head">
+      <p class="tool__title">Checkout builder</p>
+      <p class="tool__hint">Choose how you want to take the payment. You get the controller, and for Inertia the page component too.</p>
     </div>
 
-    <div class="tool__grid">
-      <label class="tool__check"><input v-model="form.fromOrder" type="checkbox" /> Use values from an Order model</label>
-      <label v-if="!form.fromOrder">Amount <input v-model.number="form.amount" type="number" min="1" /></label>
-      <label v-if="!form.fromOrder">Currency
-        <select v-model="form.currency"><option v-for="c in ['NGN','GHS','KES','UGX','TZS','ZAR','RWF','XAF','XOF','USD','EUR','GBP']" :key="c">{{ c }}</option></select>
-      </label>
-      <label class="tool__check"><input v-model="form.name" type="checkbox" /> Customer name</label>
-      <label class="tool__check"><input v-model="form.phone" type="checkbox" /> Customer phone</label>
-      <label class="tool__check"><input v-model="form.meta" type="checkbox" /> Meta (order id)</label>
-      <label class="tool__check"><input v-model="form.subaccount" type="checkbox" /> Split to a subaccount</label>
-      <label>Payment options <input v-model="form.options" type="text" placeholder="card,banktransfer,ussd" /><small>Empty uses paymentType from the config</small></label>
+    <div class="tool__body">
+      <div class="tool__row">
+        <span class="tool__label" id="cb-mode">Checkout</span>
+        <div class="tool__seg" role="group" aria-labelledby="cb-mode">
+          <button v-for="m in modes" :key="m.id" type="button" :aria-pressed="form.mode === m.id" @click="form.mode = m.id">{{ m.label }}</button>
+        </div>
+      </div>
+
+      <div class="tool__row">
+        <span class="tool__label" id="cb-source">Values</span>
+        <div class="tool__seg" role="group" aria-labelledby="cb-source">
+          <button type="button" :aria-pressed="form.source === 'order'" @click="form.source = 'order'">From an Order model</button>
+          <button type="button" :aria-pressed="form.source === 'example'" @click="form.source = 'example'">Example values</button>
+        </div>
+      </div>
+
+      <div v-if="!fromOrder" class="tool__fields">
+        <label class="tool__field">
+          <span class="tool__label">Amount</span>
+          <input v-model.number="form.amount" type="number" min="1" />
+        </label>
+        <label class="tool__field">
+          <span class="tool__label">Currency</span>
+          <select v-model="form.currency"><option v-for="c in currencies" :key="c">{{ c }}</option></select>
+        </label>
+      </div>
+
+      <div class="tool__row">
+        <span class="tool__label">Include</span>
+        <div class="tool__chips">
+          <label class="tool__chip"><input v-model="form.name" type="checkbox" /> Customer name</label>
+          <label class="tool__chip"><input v-model="form.phone" type="checkbox" /> Customer phone</label>
+          <label class="tool__chip"><input v-model="form.meta" type="checkbox" /> Order id in meta</label>
+          <label class="tool__chip"><input v-model="form.subaccount" type="checkbox" /> Split to a subaccount</label>
+        </div>
+      </div>
+
+      <div class="tool__fields">
+        <label class="tool__field">
+          <span class="tool__label">Payment methods</span>
+          <input v-model="form.options" type="text" placeholder="card,banktransfer,ussd" />
+          <span class="tool__note">Leave empty to use <code>paymentType</code> from the config.</span>
+        </label>
+      </div>
     </div>
 
-    <p v-if="install" class="tool__hint" style="margin: 16px 0 0">Publish the components once:</p>
-    <CodeOut v-if="install" :code="install" />
-    <CodeOut :code="php" />
-    <CodeOut v-if="frontend" :code="frontend" />
+    <div class="tool__out">
+      <CodeOut v-if="install" :code="install" lang="shellscript" title="Terminal: publish the components once" />
+      <CodeOut :code="php" lang="php" title="app/Http/Controllers/CheckoutController.php" />
+      <CodeOut v-if="page" :code="page.code" :lang="page.lang" :title="page.title" />
+    </div>
   </div>
 </template>
