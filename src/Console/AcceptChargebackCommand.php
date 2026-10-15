@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Flutterwave\Payments\Console;
 
 use Flutterwave\Payments\Console\Concerns\HandlesApiErrors;
+use Flutterwave\Payments\Support\Audit;
 use Illuminate\Console\Command;
 
 class AcceptChargebackCommand extends Command
@@ -28,6 +29,8 @@ class AcceptChargebackCommand extends Command
         }
 
         $response = $this->attempt(fn () => $this->laravel->make('flutterwave')->chargebacks()->accept($id, $comment));
+
+        Audit::record('chargeback.accept', ['chargeback_id' => $id], $response !== null);
 
         if ($response === null) {
             return self::FAILURE;

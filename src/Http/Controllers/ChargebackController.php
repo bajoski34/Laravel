@@ -7,6 +7,7 @@ namespace Flutterwave\Payments\Http\Controllers;
 use Flutterwave\Payments\Exception\FlutterwaveException;
 use Flutterwave\Payments\Exception\InvalidArgument;
 use Flutterwave\Payments\Services\Chargebacks;
+use Flutterwave\Payments\Support\Audit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -25,7 +26,7 @@ class ChargebackController extends Controller
 
         $validated = $request->validate(['comment' => ['required', 'string', 'max:1000']]);
 
-        return $this->respond(fn () => app('flutterwave')->chargebacks()->accept($chargeback, $validated['comment']), "Chargeback {$chargeback} accepted. The customer will be refunded.");
+        return $this->respond('chargeback.accept', ['chargeback_id' => $chargeback], fn () => app('flutterwave')->chargebacks()->accept($chargeback, $validated['comment']), "Chargeback {$chargeback} accepted. The customer will be refunded.");
     }
 
     public function decline(Request $request, string $chargeback): RedirectResponse
@@ -40,16 +41,20 @@ class ChargebackController extends Controller
             'proof.max' => 'The proof must be smaller than 8MB.',
         ]);
 
-        return $this->respond(fn () => app('flutterwave')->chargebacks()->declineWithProof($chargeback, $validated['comment'], $request->file('proof')), "Chargeback {$chargeback} disputed. Flutterwave emails you as the dispute moves on.");
+        return $this->respond('chargeback.decline', ['chargeback_id' => $chargeback, 'proof' => $request->file('proof')->getClientOriginalName()], fn () => app('flutterwave')->chargebacks()->declineWithProof($chargeback, $validated['comment'], $request->file('proof')), "Chargeback {$chargeback} disputed. Flutterwave emails you as the dispute moves on.");
     }
 
-    private function respond(callable $call, string $success): RedirectResponse
+    private function respond(string $action, array $context, callable $call, string $success): RedirectResponse
     {
         try {
             $call();
         } catch (FlutterwaveException|InvalidArgument $e) {
+            Audit::record($action, [...$context, 'error' => $e->getMessage()], false);
+
             return back()->withErrors(['flutterwave' => $e->getMessage()]);
         }
+
+        Audit::record($action, $context);
 
         return back()->with('flutterwave.status', $success);
     }

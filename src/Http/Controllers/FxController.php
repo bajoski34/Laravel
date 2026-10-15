@@ -7,6 +7,7 @@ namespace Flutterwave\Payments\Http\Controllers;
 use Flutterwave\Payments\Exception\FlutterwaveException;
 use Flutterwave\Payments\Exception\InvalidArgument;
 use Flutterwave\Payments\Services\Fx;
+use Flutterwave\Payments\Support\Audit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -31,11 +32,17 @@ class FxController extends Controller
             'quantity' => ['required', 'numeric', 'gt:0'],
         ]);
 
+        $context = ['base' => strtoupper($validated['base']), 'target' => strtoupper($validated['target']), 'quantity' => $validated['quantity']];
+
         try {
             $quote = app('flutterwave')->fx()->quote($validated['base'], $validated['target'], $validated['quantity']);
         } catch (FlutterwaveException|InvalidArgument $e) {
+            Audit::record('fx.quote', [...$context, 'error' => $e->getMessage()], false);
+
             return back()->withErrors(['flutterwave' => $e->getMessage()])->withInput();
         }
+
+        Audit::record('fx.quote', [...$context, 'quote_id' => $quote['data']['id'] ?? null]);
 
         return $this->backWith([Fx::QUOTE_PARAM => $quote['data']['id'] ?? null, Fx::TRADE_PARAM => null]);
     }
@@ -52,8 +59,12 @@ class FxController extends Controller
         try {
             $trade = app('flutterwave')->fx()->tradeIfReady($validated['quote_id'], $validated['narration']);
         } catch (FlutterwaveException|InvalidArgument $e) {
+            Audit::record('fx.trade', ['quote_id' => $validated['quote_id'], 'error' => $e->getMessage()], false);
+
             return back()->withErrors(['flutterwave' => $e->getMessage()]);
         }
+
+        Audit::record('fx.trade', ['quote_id' => $validated['quote_id'], 'trade_id' => $trade['data']['id'] ?? null, 'narration' => $validated['narration']]);
 
         return $this->backWith([Fx::QUOTE_PARAM => $validated['quote_id'], Fx::TRADE_PARAM => $trade['data']['id'] ?? null]);
     }

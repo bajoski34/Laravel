@@ -187,6 +187,16 @@ defineProps<{ order: { id: number; paid: boolean }; checkout: FlutterwaveCheckou
 
 **Styling.** In React and Svelte, `class`/`className` replaces the default classes. In Vue, `class` is merged onto the root element, as usual for Vue.
 
+### Checksum (optional)
+
+Turn on Flutterwave's checksum to have it reject any checkout whose amount, currency, email or reference was changed in the browser:
+
+```dotenv
+FLW_CHECKSUM=true
+```
+
+The package then adds a `payload_hash` to every hosted and inline checkout, including the Blade button and the React, Vue and Svelte components. It's off by default. Turn it on, make one test payment, and keep it on if the payment goes through. If Flutterwave shows a checksum error instead, turn it off again and [open an issue](https://github.com/bajoski34/Laravel/issues). For a checkout you build yourself, `Flutterwave\Payments\Support\Checksum::make($payload, $secretKey)` returns the hash. Keep verifying payments on your server either way.
+
 ### Confirming a payment
 
 Flutterwave redirects the customer to `FLW_REDIRECT_URL` with `status`, `tx_ref` and `transaction_id`. Never trust those query parameters. Verify on the server instead:
@@ -195,7 +205,7 @@ Flutterwave redirects the customer to `FLW_REDIRECT_URL` with `status`, `tx_ref`
 Route::get('/flutterwave/payment/callback', function (Request $request) {
     $order = Order::where('reference', $request->tx_ref)->firstOrFail();
 
-    if ($request->transaction_id && Flutterwave::isSuccessful($request->transaction_id, $order->amount, $order->currency)) {
+    if ($request->transaction_id && Flutterwave::isSuccessful($request->transaction_id, $order->amount, $order->currency, $order->reference)) {
         $order->markAsPaid();
 
         return redirect()->route('orders.show', $order);
@@ -296,6 +306,23 @@ Flutterwave::banks()->resolveMerchant('7981223');                         // Flu
 ```
 
 With test keys, only [Flutterwave's test accounts](https://developer.flutterwave.com/docs/testing#bank-accounts) resolve. Real account numbers return an error.
+
+### Testing transfers in the sandbox
+
+With test keys, Flutterwave leaves transfers `PENDING` unless the reference says how they should end. Pass `test_outcome` and the package adds the suffix Flutterwave looks for. With live keys it's ignored:
+
+```php
+Flutterwave::transfers()->create([
+    'account_bank' => '044',
+    'account_number' => '0690000031',
+    'amount' => 5500,
+    'currency' => 'NGN',
+    'test_outcome' => 'success',  // or 'failure'
+    'test_resolve_after' => 1,    // minutes; Flutterwave's default is 10
+]);
+```
+
+Sandbox transfers also need your server's IP whitelisted on the dashboard. Transfers to `0690000036` fail as a blacklisted account.
 
 ## Stablecoins
 
@@ -672,11 +699,15 @@ php artisan flutterwave:fx-status 08e27e03 --trade
 php artisan flutterwave:bills                           # bill categories, then: flutterwave:bills CABLEBILLS, flutterwave:bills --biller=BIL119
 ```
 
-Run `flutterwave:doctor` after installing and before going live. It flags test and live keys mixed together, a missing webhook secret hash (which makes every webhook get rejected), a webhook URL Flutterwave can't reach, a cache that won't remember handled webhooks, and admin routes without the `flutterwave.manage` ability. It then checks that Flutterwave accepts your secret key. Pass `--offline` to skip that last check.
+Run `flutterwave:doctor` after installing and before going live. It flags test and live keys mixed together, an app running on an IP address (where the checkout won't load), a missing webhook secret hash (which makes every webhook get rejected), a webhook URL Flutterwave can't reach, a cache that won't remember handled webhooks, and admin routes without the `flutterwave.manage` ability. It then checks that Flutterwave accepts your secret key. Pass `--offline` to skip that last check.
 
 Commands that refund a customer or move money (`accept-chargeback`, `decline-chargeback` and `fx-trade`) show what will happen and ask before going ahead. Pass `--force` to run them from scripts or CI. Without it, they change nothing when there's no terminal to ask in.
 
 `flutterwave:ping-webhook` fetches the real transaction (or transfer, with `--event=transfer`) and posts it to your local URL as a signed `charge.completed` or `transfer.completed` webhook, so you can test your listeners without exposing localhost. The URL defaults to this app's webhook route, and the signature uses `FLW_SECRET_HASH` unless you pass `--hash`.
+
+## Audit log
+
+Accepting or disputing a chargeback and trading FX, through the admin screens or the Artisan commands, are recorded in the `flutterwave` log channel. Each entry has the action, whether it succeeded, the user ID (or the system user for commands), and the IP address. The admin page is sent with `Cache-Control: no-store`, so browsers and proxies don't keep copies of balances and disputes.
 
 ## Error handling
 
@@ -732,7 +763,9 @@ use Flutterwave\Payments\Testing\FlutterwaveFake;
 $this->postJson('/flutterwave/webhook', ['event' => 'charge.completed', 'data' => ['id' => 4975363]], FlutterwaveFake::webhookHeaders());
 ```
 
-The fake fills in placeholder keys when your test environment has none. To test against a running app instead, use `php artisan flutterwave:ping-webhook {transaction-id}`.
+The fake fills in placeholder keys when your test environment has none.
+
+For trying flows by hand against Flutterwave's sandbox, `Flutterwave\Payments\Testing\SandboxData` holds the official test values. These include cards that succeed or fail in specific ways, the special OTPs, the Access Bank test accounts and the blacklisted one, the DSTV and airtime bill credentials, and the BVN test identities. In test mode, airtime numbers must start with `+234`, and the checkout only loads on `localhost` or a domain, not on `127.0.0.1`. To test against a running app instead, use `php artisan flutterwave:ping-webhook {transaction-id}`.
 
 ## Customising
 

@@ -8,6 +8,7 @@ use Exception;
 use Flutterwave\Payments\Data\Api;
 use Flutterwave\Payments\Exception\InvalidArgument;
 use Flutterwave\Payments\Support\ApiClient;
+use Flutterwave\Payments\Support\Checksum;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Log;
 use Psr\Log\LoggerInterface;
@@ -84,6 +85,12 @@ class Modal
         ];
 
         $this->validateRequest($data);
+
+        // Opt-in (FLW_CHECKSUM=true): lets Flutterwave reject a checkout whose amount, currency,
+        // email or reference was changed after it left your server.
+        if (! empty($this->config['checksum'])) {
+            $data['payload_hash'] = Checksum::make($data, (string) ($this->config['secret_key'] ?? ''));
+        }
 
         return $data;
     }

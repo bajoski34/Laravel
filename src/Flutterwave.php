@@ -282,9 +282,9 @@ final class Flutterwave
      * Verify a transaction and confirm it was paid in full.
      *
      * Returns true only when Flutterwave reports the transaction as successful
-     * and, when given, the amount and currency match what you expected.
+     * and, when given, the amount, currency and tx_ref match what you expected.
      */
-    public function isSuccessful(int|string $transactionId, int|float|null $expectedAmount = null, ?string $expectedCurrency = null): bool
+    public function isSuccessful(int|string $transactionId, int|float|null $expectedAmount = null, ?string $expectedCurrency = null, ?string $expectedReference = null): bool
     {
         $response = $this->verifyTransaction($transactionId);
         $data = $response['data'] ?? [];
@@ -298,6 +298,10 @@ final class Flutterwave
         }
 
         if ($expectedCurrency !== null && strtoupper((string) ($data['currency'] ?? '')) !== strtoupper($expectedCurrency)) {
+            return false;
+        }
+
+        if ($expectedReference !== null && ($data['tx_ref'] ?? null) !== $expectedReference) {
             return false;
         }
 
@@ -332,6 +336,7 @@ final class Flutterwave
             'prefix' => config('flutterwave.transactionPrefix', 'LARAVEL-'),
             'env' => config('flutterwave.env'),
             'secret_hash' => config('flutterwave.secretHash'),
+            'checksum' => (bool) config('flutterwave.checksum', false),
             'encryption_key' => config('flutterwave.encryptionKey'),
             'business_name' => config('flutterwave.businessName'),
             'merchant_id' => config('flutterwave.merchantId'),

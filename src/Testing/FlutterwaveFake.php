@@ -220,6 +220,7 @@ class FlutterwaveFake
             $method === 'POST' && $this->matches('transactions/*/refund', $path) => $ok('Transaction refund initiated', ['id' => $id(), 'tx_id' => (int) explode('/', $path)[1], 'amount_refunded' => $data['amount'] ?? null, 'status' => 'completed', 'created_at' => $now]),
             $method === 'POST' && $this->matches('transactions/*/resend-hook', $path) => $ok('Webhook resent', null),
 
+            $method === 'POST' && $path === 'transfers' && ($data['account_number'] ?? null) === SandboxData::BLACKLISTED_ACCOUNT => [['status' => 'error', 'message' => 'Payout was made to a blacklisted account number', 'data' => null], 400],
             $method === 'POST' && $path === 'transfers' => $ok('Transfer Queued Successfully', ['id' => $id(), 'account_number' => $data['account_number'] ?? null, 'bank_code' => $data['account_bank'] ?? null, 'amount' => $data['amount'] ?? null, 'currency' => $data['currency'] ?? 'NGN', 'reference' => $data['reference'] ?? null, 'status' => 'NEW', 'created_at' => $now]),
             $method === 'GET' && $this->matches('transfers/*', $path) => $ok('Transfer fetched', ['id' => (int) explode('/', $path)[1], 'status' => 'SUCCESSFUL']),
 
@@ -245,7 +246,7 @@ class FlutterwaveFake
             $method === 'POST' && $path === 'payout-subaccounts' => $ok('Payout subaccount created', ['id' => $id(), 'account_reference' => 'PSAFAKE'.$this->sequence, 'account_name' => $data['account_name'] ?? null, 'email' => $data['email'] ?? null, 'country' => $data['country'] ?? 'NG', 'nuban' => '98'.str_pad((string) $this->sequence, 8, '0', STR_PAD_LEFT), 'bank_name' => 'Flutterwave MFB', 'bank_code' => '090567', 'status' => 'ACTIVE', 'created_at' => $now]),
 
             $method === 'POST' && $path === 'bvn/verifications' => $ok('Bvn verification initiated', ['url' => 'https://nibss-bvn-consent-management.myflutterwave.com/cms/BvnConsent?session=fake', 'reference' => 'FLWFAKE'.str_pad((string) $id(), 18, '0', STR_PAD_LEFT)]),
-            $method === 'GET' && $this->matches('bvn/verifications/*', $path) => $ok('Bvn details fetched', ['first_name' => 'Jane', 'last_name' => 'Doe', 'status' => 'COMPLETED', 'reference' => explode('/', $path)[2], 'bvn_data' => ['bvn' => '22222222222', 'firstName' => 'Jane', 'surname' => 'Doe']]),
+            $method === 'GET' && $this->matches('bvn/verifications/*', $path) => $ok('Bvn details fetched', ['first_name' => SandboxData::BVN_NEW_CONSENT[1], 'last_name' => SandboxData::BVN_NEW_CONSENT[2], 'status' => 'COMPLETED', 'reference' => explode('/', $path)[2], 'bvn_data' => ['bvn' => SandboxData::BVN_NEW_CONSENT[0], 'firstName' => SandboxData::BVN_NEW_CONSENT[1], 'surname' => SandboxData::BVN_NEW_CONSENT[2]]]),
 
             default => $ok('Fake response', $method === 'GET' ? [] : null),
         };

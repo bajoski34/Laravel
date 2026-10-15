@@ -71,6 +71,10 @@ class DoctorCommand extends Command
 
         $this->result(self::OK, 'Secret key', 'Set ('.(str_contains($secret, '_TEST') ? 'test' : 'live').' mode)');
 
+        if (str_contains($secret, '_TEST')) {
+            $this->result(self::OK, 'Sandbox transfers', "Whitelist this server's IP on your dashboard first. Test transfers stay pending unless you pass test_outcome.");
+        }
+
         if ($public === '') {
             $this->result(self::WARN, 'Public key', 'FLW_PUBLIC_KEY is empty. The inline checkout and pay buttons need it.');
         } elseif (str_contains($public, '_TEST') !== str_contains($secret, '_TEST')) {
@@ -109,6 +113,12 @@ class DoctorCommand extends Command
 
     private function checkCheckout(): void
     {
+        $host = (string) parse_url(url('/'), PHP_URL_HOST);
+
+        if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
+            $this->result(self::WARN, 'App address', "Flutterwave's checkout doesn't load on an IP address like {$host}. Open your app on localhost or a domain, and set APP_URL to match.");
+        }
+
         if ((string) config('flutterwave.redirectUrl') === '') {
             $this->result(self::WARN, 'Redirect URL', 'FLW_REDIRECT_URL is empty, so customers stay on Flutterwave after paying, and saved card charges need a redirect_url each time.');
         } else {

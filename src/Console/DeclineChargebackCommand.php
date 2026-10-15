@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Flutterwave\Payments\Console;
 
 use Flutterwave\Payments\Console\Concerns\HandlesApiErrors;
+use Flutterwave\Payments\Support\Audit;
 use Illuminate\Console\Command;
 
 class DeclineChargebackCommand extends Command
@@ -42,6 +43,8 @@ class DeclineChargebackCommand extends Command
         $response = $this->attempt(fn () => $proof
             ? $chargebacks->declineWithProof($id, $comment, (string) $proof)
             : $chargebacks->decline($id, $comment, (string) $link));
+
+        Audit::record('chargeback.decline', ['chargeback_id' => $id, 'proof' => $proof ? basename((string) $proof) : $link], $response !== null);
 
         if ($response === null) {
             return self::FAILURE;

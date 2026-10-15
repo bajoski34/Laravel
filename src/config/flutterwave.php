@@ -94,6 +94,18 @@ return [
 
     /*
      |--------------------------------------------------------------------------
+     | Checksum [YOU CAN EDIT THIS SECTION]
+     |--------------------------------------------------------------------------
+     | Adds a payload_hash to every checkout, so Flutterwave rejects one whose
+     | amount, currency, email or reference was changed in the browser. Off by
+     | default: turn it on, make a test payment, and keep it on if it succeeds.
+     | Always verify payments on your server either way.
+     */
+
+    'checksum' => env('FLW_CHECKSUM', false),
+
+    /*
+     |--------------------------------------------------------------------------
      | Encryption Key [YOU CAN EDIT THIS SECTION]
      |--------------------------------------------------------------------------
      | The encryption key is used to automatically encrypt specific payloads

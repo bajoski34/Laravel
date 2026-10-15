@@ -9,6 +9,8 @@ export interface FlutterwaveCheckoutConfig {
     customer: { email: string; name?: string; phone_number?: string };
     meta?: Record<string, unknown>;
     customizations?: { title?: string; description?: string; logo?: string };
+    /** Present when FLW_CHECKSUM is on: Flutterwave rejects the checkout if amount, currency, email or tx_ref changed. */
+    payload_hash?: string;
     [key: string]: unknown;
 }
 

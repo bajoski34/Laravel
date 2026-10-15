@@ -44,6 +44,18 @@ class ChargeCompleted
         return $this->transaction['currency'] ?? null;
     }
 
+    /**
+     * True when the payment succeeded for at least $amount, in $currency, for your $reference.
+     * Check this before giving value, as Flutterwave recommends.
+     */
+    public function matches(int|float $amount, string $currency, ?string $reference = null): bool
+    {
+        return $this->isSuccessful()
+            && $this->amount() >= (float) $amount
+            && strtoupper((string) $this->currency()) === strtoupper($currency)
+            && ($reference === null || $this->reference() === $reference);
+    }
+
     public function customerEmail(): ?string
     {
         return $this->transaction['customer']['email'] ?? null;

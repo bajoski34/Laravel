@@ -7,6 +7,7 @@ namespace Flutterwave\Payments\Console;
 use Flutterwave\Payments\Console\Concerns\HandlesApiErrors;
 use Flutterwave\Payments\Console\Concerns\ShowsFxQuotes;
 use Flutterwave\Payments\Services\Fx;
+use Flutterwave\Payments\Support\Audit;
 use Illuminate\Console\Command;
 
 class FxTradeCommand extends Command
@@ -48,6 +49,8 @@ class FxTradeCommand extends Command
         }
 
         $trade = $this->attempt(fn () => $fx->trade($quoteId, $narration))['data'] ?? null;
+
+        Audit::record('fx.trade', ['quote_id' => $quoteId, 'trade_id' => $trade['id'] ?? null, 'narration' => $narration], $trade !== null);
 
         if ($trade === null) {
             return self::FAILURE;

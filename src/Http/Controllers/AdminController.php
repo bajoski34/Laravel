@@ -6,8 +6,8 @@ namespace Flutterwave\Payments\Http\Controllers;
 
 use Flutterwave\Payments\Exception\FlutterwaveException;
 use Flutterwave\Payments\Services\Fx;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Gate;
 
@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Gate;
  */
 class AdminController extends Controller
 {
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request): Response
     {
         Gate::authorize('flutterwave.manage');
 
@@ -32,12 +32,13 @@ class AdminController extends Controller
             $balancesError = $e->getMessage();
         }
 
-        return view('flutterwave::admin.index', [
+        // Balances and disputes shouldn't be kept by browsers or proxies.
+        return response()->view('flutterwave::admin.index', [
             'balances' => array_values(array_filter($balances, static fn (array $balance) => (float) ($balance['available_balance'] ?? 0) > 0 || (float) ($balance['ledger_balance'] ?? 0) > 0)),
             'balancesError' => $balancesError,
             'chargebackStatus' => $status === 'all' ? 'all' : 'initiated',
             'chargebacks' => $flutterwave->chargebacks()->panel($status === 'all' ? [] : ['status' => 'initiated']),
             'fx' => $flutterwave->fx()->panel($request->query(Fx::QUOTE_PARAM), $request->query(Fx::TRADE_PARAM)),
-        ]);
+        ])->header('Cache-Control', 'no-store, private');
     }
 }

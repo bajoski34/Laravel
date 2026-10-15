@@ -15,7 +15,8 @@ The biggest release so far: most of the Flutterwave v3 API, webhooks as Laravel 
 
 **Payments**
 - `Flutterwave::checkout()` returns a hosted payment link, and `Flutterwave::redirect()` sends the customer straight to it. Only `amount` and `email` are required; `tx_ref`, currency, redirect URL and branding come from config.
-- `Flutterwave::isSuccessful($id, $amount, $currency)` verifies a payment and confirms the amount and currency in one call.
+- `Flutterwave::isSuccessful($id, $amount, $currency, $reference)` verifies a payment and confirms the amount, currency and tx_ref in one call. `ChargeCompleted::matches($amount, $currency, $reference)` does the same in a webhook listener.
+- Optional checksum: with `FLW_CHECKSUM=true`, every checkout carries a `payload_hash`, so Flutterwave rejects one changed in the browser. Off by default. `Support\Checksum::make()` builds it for custom checkouts.
 - `Flutterwave::refund($id, $amount = null)` for full and partial refunds.
 - `<x-flutterwave-button>` Blade component for inline checkout.
 - `<x-flutterwave-virtual-account>` Blade component: creates a dynamic NGN or GHS virtual account and shows the bank details with a copy button and an expiry countdown. Accounts are cached per `tx-ref`, so refreshing the page doesn't create a new one.
@@ -57,6 +58,8 @@ The biggest release so far: most of the Flutterwave v3 API, webhooks as Laravel 
 - Artisan commands: `flutterwave:install` (publishes the config, adds keys to `.env` and prints the webhook URL), `flutterwave:verify` and `flutterwave:banks`.
 - `Flutterwave::fake()` for testing apps that use the package: realistic responses for every endpoint, assertions such as `assertCheckoutCreated()` and `assertTransferSent()`, and signed webhook headers.
 - `flutterwave:doctor` checks keys, webhooks, the cache, the queue and API access in one go.
+- Sandbox helpers: `test_outcome` and `test_resolve_after` on transfers end test-mode transfers the way you choose (ignored with live keys), and `Testing\SandboxData` holds Flutterwave's official test cards, accounts, bills and BVN identities.
+- Admin screen and command actions that refund customers or move money are written to an audit log, and the admin page is sent with `Cache-Control: no-store`.
 - `ChargebackRaised` and `TransferFailed` notifications, sent automatically to the addresses in `FLW_NOTIFY_CHARGEBACKS` and `FLW_NOTIFY_FAILED_TRANSFERS`.
 - An optional admin page from `Route::flutterwaveAdmin()`, with balances, chargebacks and the FX converter.
 - Artisan commands matching the standalone Flutterwave CLI: `flutterwave:balance`, `flutterwave:branches`, `flutterwave:resolve`, `flutterwave:bin`, `flutterwave:rate`, `flutterwave:pay`, `flutterwave:resend-webhook` and `flutterwave:ping-webhook` (posts a signed webhook for a real transaction to a local URL).
