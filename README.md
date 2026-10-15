@@ -65,6 +65,32 @@ FLW_ENCRYPTION_KEY=xxxxxxxx
 
 Get your keys from the [Flutterwave dashboard](https://app.flutterwave.com/dashboard/settings/apis). Test keys work against the sandbox automatically.
 
+### Publishing files
+
+`flutterwave:install` publishes only the config. Everything else is opt-in: publish just the parts you need, by tag or with an install option.
+
+| What | Tag | Install option | Goes to |
+|---|---|---|---|
+| Config | `flutterwave-config` | *(always)* | `config/flutterwave.php` |
+| React, Vue or Svelte components | `flutterwave-react`, `flutterwave-vue`, `flutterwave-svelte` | `--react`, `--vue`, `--svelte` | `resources/js/components/flutterwave/` |
+| Saved card columns | `flutterwave-migrations` | `--billable` | `database/migrations/` |
+| Blade views | `flutterwave-views` | | `resources/views/vendor/flutterwave/` |
+| Example checkout routes | `flutterwave-routes` | | `routes/vendor/flutterwave/web.php` |
+
+```shell
+php artisan vendor:publish --tag=flutterwave-views
+```
+
+Before you publish:
+
+- **Components:** publish one framework only. They all go to the same folder, and `flutterwave:install` refuses to publish two.
+- **Migration:** it adds columns to `users`. Edit the `$table` property first if your billable model uses another table.
+- **Views:** published copies replace the package's, so later fixes to them won't reach you. Publish them only to restyle them, and keep only the files you changed.
+- **Example routes:** once published, they're loaded automatically and add public routes to your app, including `POST /flutterwave/payment/checkout`. Edit or delete the file to suit your app.
+- **`--force` overwrites your edits.** The install command passes `--force` only when you give it `--force`.
+
+> **Don't publish everything with `--provider`.** `php artisan vendor:publish --provider="Flutterwave\Payments\Providers\FlutterwaveServiceProvider"` publishes every tag at once. That puts all three frontends' components in one folder, adds the saved-card migration and the example routes, and copies every view. Use the tags above instead.
+
 ## Accepting payments
 
 ### Hosted checkout (recommended)
@@ -770,8 +796,7 @@ For trying flows by hand against Flutterwave's sandbox, `Flutterwave\Payments\Te
 ## Customising
 
 - **Branding and defaults:** set the business name, logo, currency, country and payment methods in `config/flutterwave.php`.
-- **Example routes:** run `php artisan vendor:publish --tag=flutterwave-routes` for ready-made checkout and callback routes in `routes/vendor/flutterwave/web.php`.
-- **Views:** run `php artisan vendor:publish --tag=flutterwave-views`.
+- **Example routes and views:** publish them by tag, as described in [Publishing files](#publishing-files).
 - **Swap a service:** map a key in `services`, e.g. `'transfers' => App\Payments\Transfers::class` (extend the original class), or set a key to `null` to disable that service.
 
 ## Upgrading from 2.2

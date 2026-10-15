@@ -20,7 +20,7 @@ class InstallCommand extends Command
     protected $description = 'Publish the Flutterwave config and add the required keys to your .env file';
 
     private const ENV_KEYS = [
-        'FLW_PUBLIC_KEY' => 'Public key from https://app.flutterwave.com/dashboard/settings/apis',
+        'FLW_PUBLIC_KEY' => 'Public key from https://app.flutterwave.com/dashboard/settings/apis/live',
         'FLW_SECRET_KEY' => 'Secret key from the same page',
         'FLW_SECRET_HASH' => 'Any random string; paste the same value into Settings > Webhooks',
         'FLW_ENCRYPTION_KEY' => 'Encryption key from the API settings page',
