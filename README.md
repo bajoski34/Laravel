@@ -55,11 +55,11 @@ Supports **PHP 8.1+** and **Laravel 9, 10, 11, 12 and 13**.
 
 ## Setup guide (PDF)
 
-A 17-page developer quickstart for teams setting up the package, in Flutterwave's brand:
+A 16-page developer quickstart for teams setting up the package, in Flutterwave's brand:
 
 - **Download:** [flutterwave-laravel-guide.pdf](https://bajoski34.github.io/Laravel/downloads/flutterwave-laravel-guide.pdf) from the documentation site, or the [HTML edition](https://bajoski34.github.io/Laravel/downloads/flutterwave-laravel-guide.html) with a searchable troubleshooting section.
 - **In this repo:** both live in [`docs/public/downloads/`](docs/public/downloads/), so they ship with every docs deploy.
-- **What's in it:** prerequisites, the three install routes (Composer, Inertia, unreleased 2.x), connecting your keys and webhook, one full test payment, a go-live checklist, eight troubleshooting entries, where to get help and a bug report template.
+- **What's in it:** prerequisites, both install routes (Composer, and Composer with the Inertia components), connecting your keys and webhook, one full test payment, a go-live checklist, eight troubleshooting entries, where to get help and a bug report template.
 
 It documents 2.3.0. When a release changes the setup steps or settings, update the HTML edition and re-export the PDF in the same pull request.
 

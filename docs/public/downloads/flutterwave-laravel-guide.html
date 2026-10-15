@@ -336,7 +336,7 @@
   <h1 class="mast">Flutterwave for Laravel</h1>
   <p class="dek">Take card, bank transfer, USSD and mobile money payments in your Laravel app, then send payouts and react to payment events. This guide takes you from <code>composer require</code> to a verified test payment and a safe launch, in about 30 minutes.</p>
   <div class="issue-line">
-    <span>DOCUMENTS <b>2.3.0</b></span>
+    <span>VERSION <b>2.3.0</b></span>
     <span>LARAVEL 9 TO 13</span>
     <span>PHP <b>8.1+</b></span>
     <span>SETUP TIME ~30 MIN</span>
@@ -351,7 +351,7 @@
   <dl class="facts">
     <div><dt>Package</dt><dd>abraham-flutterwave/laravel-payment</dd></div>
     <div><dt>Where to install</dt><dd><a href="https://packagist.org/packages/abraham-flutterwave/laravel-payment">Packagist</a>, with Composer</dd></div>
-    <div><dt>Latest tagged release</dt><dd>2.2.0 · 7 Oct 2026</dd></div>
+    <div><dt>Latest release</dt><dd>2.3.0 · 15 Oct 2026</dd></div>
     <div><dt>Licence</dt><dd>MIT</dd></div>
     <div><dt>Requires</dt><dd>PHP 8.1+ · Laravel 9 to 13</dd></div>
     <div><dt>Support</dt><dd><a href="#help">Slack, email &amp; GitHub</a></dd></div>
@@ -395,15 +395,10 @@
     <h2>Install the package</h2>
     <p class="lede">Composer pulls it from Packagist. Pick the tab that matches your app: most apps want the first one.</p>
 
-    <div class="callout warn">
-      <b>This guide documents 2.3.0</b>
-      <p>Until 2.3.0 is tagged, <code>composer require</code> installs 2.2.0. That version doesn't have <code>flutterwave:doctor</code>, <code>flutterwave:pay</code> or <code>flutterwave:ping-webhook</code>, which steps two and three use. Check with <code>composer show abraham-flutterwave/laravel-payment</code>, and use the <strong>Unreleased 2.x</strong> tab if you need them now.</p>
-    </div>
 
     <div class="tabs" role="tablist">
       <button role="tab" aria-selected="true" aria-controls="t-composer">Composer</button>
       <button role="tab" aria-selected="false" aria-controls="t-inertia">With Inertia</button>
-      <button role="tab" aria-selected="false" aria-controls="t-dev">Unreleased 2.x</button>
     </div>
 
     <div class="panel" id="t-composer" role="tabpanel">
@@ -451,20 +446,6 @@
       </div>
     </div>
 
-    <div class="panel" id="t-dev" role="tabpanel" hidden>
-      <p class="hint">Gets you 2.3.0 before it's tagged. Besides the setup commands, 2.2.0 is missing saved cards, bill payments, wallets, chargebacks, FX trades, BVN checks, <code>Flutterwave::fake()</code> and the React, Vue and Svelte components. Use this on a branch you can roll back, not in production.</p>
-      <div class="steps">
-        <article><div class="body">
-          <h3>Require the 2.x branch</h3>
-          <div class="code"><button class="cp">Copy</button><pre>composer require "abraham-flutterwave/laravel-payment:2.x-dev"</pre></div>
-        </div></article>
-        <article><div class="body">
-          <h3>Switch back once 2.3.0 is released</h3>
-          <p>Watch the <a href="https://github.com/bajoski34/Laravel/releases">releases page</a>, then pin a tagged version so your builds stay repeatable:</p>
-          <div class="code"><button class="cp">Copy</button><pre>composer require "abraham-flutterwave/laravel-payment:^2.3"</pre></div>
-        </div></article>
-      </div>
-    </div>
   </section>
 
   <section id="connect">
