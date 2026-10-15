@@ -327,6 +327,26 @@
     html{scroll-behavior:auto}
     *{transition:none!important}
   }
+
+  /* ---------- containment ----------
+     Grid tracks default to fitting their content, so one long code line
+     could push a card past the screen edge. Let tracks shrink instead:
+     code blocks then scroll inside their card, and inline code wraps. */
+  .steps > article{grid-template-columns:38px minmax(0,1fr)}
+  .check li{grid-template-columns:22px minmax(0,1fr)}
+  .steps .body,.check label,.fields dd,.fix .in,.callout,.help .card{min-width:0}
+  .code{max-width:100%}
+  .filter input{min-width:0;width:100%}
+  code,.path,kbd{overflow-wrap:anywhere}
+  .path{white-space:normal}
+  .fields dt{overflow-wrap:anywhere}
+  @media(max-width:560px){
+    .steps > article{grid-template-columns:28px minmax(0,1fr);gap:12px;padding:18px 16px}
+    .fix .in{padding:14px 16px 16px 20px}
+  }
+
+  /* The PDF keeps links clickable, so the footer doesn't print raw URLs after them. */
+  @media print{ footer a::after{content:none !important} }
 </style>
 </head>
 <body>
