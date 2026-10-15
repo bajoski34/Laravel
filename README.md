@@ -766,7 +766,7 @@ Ideas for what's next: bill payments, card tokenisation and charges, payment lin
 ## Support
 
 - [Flutterwave API documentation](https://developer.flutterwave.com)
-- [Flutterwave error reference](https://developer.flutterwave.com/docs/integration-guides/errors)
+- [Flutterwave error reference](https://developer.flutterwave.com/docs/common-errors)
 - Email the developer experience team at [developers@flutterwavego.com](mailto:developers@flutterwavego.com)
 - Follow [@FlutterwaveEng](https://twitter.com/FlutterwaveEng)
 
