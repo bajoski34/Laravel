@@ -1,0 +1,33 @@
+# Keeps the pinned GitHub Actions and the docs' npm packages up to date.
+# Actions are pinned to commit SHAs, so these PRs are how they get updated.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: ci
+
+  - package-ecosystem: npm
+    directory: /docs
+    schedule:
+      interval: weekly
+    groups:
+      docs:
+        patterns: ['*']
+    commit-message:
+      prefix: docs
+
+  - package-ecosystem: npm
+    directory: /tests/js
+    schedule:
+      interval: monthly
+    groups:
+      frontend-tests:
+        patterns: ['*']
+    commit-message:
+      prefix: test

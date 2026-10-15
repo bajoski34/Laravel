@@ -926,6 +926,10 @@ Ideas for what's next: bill payments, card tokenisation and charges, payment lin
 - Email the developer experience team at [developers@flutterwavego.com](mailto:developers@flutterwavego.com)
 - Follow [@FlutterwaveEng](https://twitter.com/FlutterwaveEng)
 
+## Security
+
+Found a vulnerability? Please don't open a public issue. Report it privately as described in [SECURITY.md](SECURITY.md).
+
 ## License
 
 MIT. See [LICENSE](LICENSE). Copyright (c) Flutterwave Inc.
