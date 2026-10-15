@@ -1,4 +1,4 @@
-import DefaultTheme from 'vitepress/theme'
+import DefaultTheme from 'vitepress/theme-without-fonts'
 import type { Theme } from 'vitepress'
 import './style.css'
 
@@ -7,6 +7,7 @@ import CheckoutBuilder from './components/CheckoutBuilder.vue'
 import WebhookTester from './components/WebhookTester.vue'
 import ServiceExplorer from './components/ServiceExplorer.vue'
 import ArtisanBuilder from './components/ArtisanBuilder.vue'
+import HomeLanding from './components/HomeLanding.vue'
 
 export default {
   extends: DefaultTheme,
@@ -16,5 +17,6 @@ export default {
     app.component('WebhookTester', WebhookTester)
     app.component('ServiceExplorer', ServiceExplorer)
     app.component('ArtisanBuilder', ArtisanBuilder)
+    app.component('HomeLanding', HomeLanding)
   },
 } satisfies Theme

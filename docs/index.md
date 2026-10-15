@@ -1,68 +1,71 @@
 ---
 layout: home
-
-hero:
-  name: Flutterwave for Laravel
-  text: Payments, payouts and webhooks, the Laravel way
-  tagline: Take payments across Africa and beyond with a facade, events and artisan commands you already know how to use.
-  image:
-    src: /logo.svg
-    alt: Flutterwave Laravel
-  actions:
-    - theme: brand
-      text: Get started
-      link: /guide/getting-started
-    - theme: alt
-      text: Try the tools
-      link: /tools/
-    - theme: alt
-      text: GitHub
-      link: https://github.com/bajoski34/Laravel
-
-features:
-  - icon: 💳
-    title: Checkout in one line
-    details: Flutterwave::redirect() for the hosted page, inlineConfig() for the modal, and ready-made React, Vue and Svelte buttons for Inertia apps.
-    link: /guide/checkout
-  - icon: 🔐
-    title: Webhooks done for you
-    details: A signed route, re-verification of every charge, dedupe across retries, optional queueing, and plain Laravel events to listen to.
-    link: /guide/webhooks
-  - icon: 💸
-    title: More than collections
-    details: Transfers, virtual accounts, subscriptions, saved cards, FX, bill payments, BVN checks, chargebacks and stablecoins. 21 services in total.
-    link: /reference/services
-  - icon: 🧰
-    title: Artisan toolkit
-    details: flutterwave:doctor checks your setup. Resolve accounts, list banks, verify transactions and replay webhooks from the terminal.
-    link: /reference/artisan
-  - icon: 🧪
-    title: Testable
-    details: Flutterwave::fake() answers every API call with a realistic response and gives you assertions like assertCheckoutCreated().
-    link: /guide/testing
-  - icon: 🖥️
-    title: Admin out of the box
-    details: Route::flutterwaveAdmin() adds a page for transactions, refunds, settlements, chargebacks and FX, behind your own auth.
-    link: /guide/admin
+markdownStyles: false
+pageClass: landing-page
+title: Flutterwave for Laravel
+titleTemplate: false
 ---
 
-## Install
-
-```bash
-composer require abraham-flutterwave/laravel-payment
-php artisan flutterwave:install
-```
-
-Then [take your first payment](/guide/checkout):
+<HomeLanding>
+<template #checkout>
 
 ```php
-use Flutterwave\Payments\Facades\Flutterwave;
-
-return Flutterwave::redirect([
-    'amount' => 5000,
-    'currency' => 'NGN',
-    'email' => $user->email,
-]);
+public function store(Order $order)
+{
+    return Flutterwave::redirect([
+        'tx_ref' => $order->reference,
+        'amount' => $order->total,
+        'currency' => 'NGN',
+        'email' => $order->customer_email,
+    ]);
+}
 ```
 
-Supports PHP 8.1+ and Laravel 9 to 13.
+</template>
+<template #webhook>
+
+```php
+public function handle(ChargeCompleted $event): void
+{
+    // Signature checked, duplicates dropped, and the
+    // charge re-fetched from the API before this runs.
+    if ($event->isSuccessful()) {
+        Order::firstWhere('reference', $event->reference())
+            ?->markPaid();
+    }
+}
+```
+
+</template>
+<template #payout>
+
+```php
+public function handle(): void
+{
+    Flutterwave::transfers()->create([
+        'account_bank' => $this->seller->bank_code,
+        'account_number' => $this->seller->account_number,
+        'amount' => $this->sale->net_amount,
+        'currency' => 'NGN',
+        'narration' => "Payout for sale #{$this->sale->id}",
+    ]);
+}
+```
+
+</template>
+<template #test>
+
+```php
+it('sends the customer to checkout', function () {
+    $flutterwave = Flutterwave::fake();
+
+    $this->post("/orders/{$order->id}/pay")->assertRedirect();
+
+    $flutterwave->assertCheckoutCreated(
+        fn (array $payment) => $payment['amount'] === $order->total
+    );
+});
+```
+
+</template>
+</HomeLanding>

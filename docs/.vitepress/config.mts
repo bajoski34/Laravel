@@ -12,9 +12,12 @@ export default defineConfig({
   lastUpdated: true,
 
   head: [
-    ['meta', { name: 'theme-color', content: '#f5a623' }],
+    ['meta', { name: 'theme-color', content: '#ff9b00' }],
     ['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}logo.svg` }],
   ],
+
+  // The fonts live in the package's src/, one level above the docs.
+  vite: { server: { fs: { allow: ['..'] } } },
 
   markdown: {
     theme: { light: 'github-light', dark: 'github-dark' },
