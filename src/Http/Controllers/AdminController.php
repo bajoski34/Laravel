@@ -17,10 +17,38 @@ use Illuminate\Support\Facades\Gate;
  */
 class AdminController extends Controller
 {
+    public const SECTIONS = [
+        'overview' => 'Overview',
+        'transactions' => 'Transactions',
+        'refunds' => 'Refunds',
+        'settlements' => 'Settlements',
+        'beneficiaries' => 'Beneficiaries',
+    ];
+
     public function __invoke(Request $request): Response
     {
         Gate::authorize('flutterwave.manage');
 
+        $section = array_key_exists((string) $request->query('section'), self::SECTIONS) ? (string) $request->query('section') : 'overview';
+        $flutterwave = app('flutterwave');
+        $query = $request->query();
+
+        // Only the section on screen is loaded, so each visit makes just the calls it needs.
+        $data = match ($section) {
+            'transactions' => ['transactions' => $flutterwave->transactions()->panel($query)],
+            'refunds' => ['refunds' => $flutterwave->refunds()->panel($query)],
+            'settlements' => ['settlements' => $flutterwave->settlements()->panel($query)],
+            'beneficiaries' => ['beneficiaries' => $flutterwave->beneficiaries()->panel($query)],
+            default => $this->overview($request),
+        };
+
+        // Balances and disputes shouldn't be kept by browsers or proxies.
+        return response()->view('flutterwave::admin.index', ['section' => $section, 'sections' => self::SECTIONS, ...$data])
+            ->header('Cache-Control', 'no-store, private');
+    }
+
+    private function overview(Request $request): array
+    {
         $flutterwave = app('flutterwave');
         $status = $request->query('chargebacks', 'initiated');
 
@@ -32,13 +60,12 @@ class AdminController extends Controller
             $balancesError = $e->getMessage();
         }
 
-        // Balances and disputes shouldn't be kept by browsers or proxies.
-        return response()->view('flutterwave::admin.index', [
+        return [
             'balances' => array_values(array_filter($balances, static fn (array $balance) => (float) ($balance['available_balance'] ?? 0) > 0 || (float) ($balance['ledger_balance'] ?? 0) > 0)),
             'balancesError' => $balancesError,
             'chargebackStatus' => $status === 'all' ? 'all' : 'initiated',
             'chargebacks' => $flutterwave->chargebacks()->panel($status === 'all' ? [] : ['status' => 'initiated']),
             'fx' => $flutterwave->fx()->panel($request->query(Fx::QUOTE_PARAM), $request->query(Fx::TRADE_PARAM)),
-        ])->header('Cache-Control', 'no-store, private');
+        ];
     }
 }

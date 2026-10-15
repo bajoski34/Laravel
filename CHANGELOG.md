@@ -12,9 +12,14 @@ Saved cards, bill payments, wallets, chargebacks, FX trades and BVN checks, plus
 - When two copies of the same webhook arrive at once, the second gets a `409` so Flutterwave retries it, instead of both running.
 - `Flutterwave::redirect()` works with Inertia: for requests with an `X-Inertia` header, it returns a `409` with `X-Inertia-Location` so the browser visits the hosted checkout. Its return type is now `RedirectResponse|Response`.
 
+### Fixed
+- `transactions()->resendFailedHooks($id, $wait)` sent `wait` in the request body; Flutterwave reads it from the query string.
+- `beneficiaries()->create()` now explains that a name is needed before calling Flutterwave, which rejects beneficiaries without one.
+
 ### Added
 
 **Payments**
+- `Flutterwave::refund()` takes `comments` and `callbackurl`; `transactions()->fee($amount, $currency, $type)` estimates Flutterwave's fee; `transactions()->all()` defaults to the last 30 days, since Flutterwave requires dates.
 - `Flutterwave::isSuccessful($id, $amount, $currency, $reference)` can also check the tx_ref. `ChargeCompleted::matches($amount, $currency, $reference)` does the same in a webhook listener.
 - Optional checksum: with `FLW_CHECKSUM=true`, every checkout carries a `payload_hash`, so Flutterwave rejects one changed in the browser. Off by default. `Support\Checksum::make()` builds it for custom checkouts.
 - `<x-flutterwave-virtual-account>` Blade component: creates a dynamic NGN or GHS virtual account and shows the bank details with a copy button and an expiry countdown. Accounts are cached per `tx-ref`, so refreshing the page doesn't create a new one.
@@ -37,7 +42,12 @@ Saved cards, bill payments, wallets, chargebacks, FX trades and BVN checks, plus
 - `cards()->bin($bin)` service for card BIN lookups.
 - `banks()->resolveAccount()` takes an optional country for Ghanaian bank accounts and mobile money numbers, and the new `banks()->resolveMerchant($id)` checks Flutterwave merchant IDs. `flutterwave:resolve` supports both with `--country` and `--merchant`.
 
+**Look and feel**
+- Every component, in Blade, React, Vue and Svelte, now has the look of Flutterwave's WooCommerce onboarding and settings screens: Millik and Moderat fonts, orange primary buttons, Flutterwave's fields, tabs, pills and notices, and its colours. They share one stylesheet, `flutterwave.css`, with CSS tokens for restyling. The fonts ship with the package and are served from `/flutterwave/assets` for Blade, and bundled by Vite for the Inertia components, so there are no third-party font requests and no Tailwind setup is needed. Light by default; dark when the app sets a `dark` class or `data-theme="dark"`.
+
 **Admin**
+- Admin components for transactions (filters, timeline, refunds, webhook resends, a fee checker), refunds, settlements (with the fee breakdown and the payments in each) and beneficiaries, in Blade, React, Vue and Svelte, with `panel()` on each service. The admin page has a section for each.
+- `BankSelect` / `<x-flutterwave-bank-select>`: a bank dropdown that shows names and submits bank codes, with search, backed by the cached `banks()->options($country)`.
 - Admin components for both, in Blade, React, Vue and Svelte: `Chargebacks` (respond-by countdown, accept, dispute with proof) and `FxConverter` (rate, 5-minute countdown, confirm, follow the trade). `chargebacks()->panel()` and `fx()->panel()` build their data. The endpoints behind them are opt-in with `Route::flutterwaveAdmin()`, and every action needs the `flutterwave.manage` ability, so nothing is reachable until you set both up.
 - An optional admin page from `Route::flutterwaveAdmin()`, with balances, chargebacks and the FX converter.
 - `ChargebackRaised` and `TransferFailed` notifications, sent automatically to the addresses in `FLW_NOTIFY_CHARGEBACKS` and `FLW_NOTIFY_FAILED_TRANSFERS`.

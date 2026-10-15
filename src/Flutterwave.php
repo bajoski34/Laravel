@@ -311,9 +311,9 @@ final class Flutterwave
     /**
      * Refund a transaction in full, or partially when an amount is given.
      */
-    public function refund(int|string $transactionId, int|float|string|null $amount = null): array
+    public function refund(int|string $transactionId, int|float|string|null $amount = null, array $options = []): array
     {
-        return $this->transactions()->refund($transactionId, $amount);
+        return $this->transactions()->refund($transactionId, $amount, $options);
     }
 
     public function config(?string $key = null): mixed

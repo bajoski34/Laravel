@@ -34,8 +34,9 @@ That one line creates a hosted checkout supporting cards, bank transfer, USSD, m
 | **Subscriptions** | Payment plans and subscription management |
 | **Virtual accounts** | Static accounts, plus a drop-in `<x-flutterwave-virtual-account>` component for one-off bank transfer payments |
 | **Split payments** | Subaccounts for marketplaces |
-| **Refunds** | Full and partial refunds, refund lookups |
-| **Balances & settlements** | Wallet balances and settlement history |
+| **Refunds** | Full and partial refunds with a reason, refund history |
+| **Balances & settlements** | Wallet balances, and settlements with their fees and the payments in each |
+| **Beneficiaries** | Saved transfer recipients, and a bank dropdown that submits the bank code |
 | **Chargebacks** | List disputes, accept them, or decline with uploaded proof |
 | **FX trades** | Request a quote and convert NGN, GHS and USD at the quoted rate |
 | **Saved cards** | Charge a customer's card again with a `Billable` trait; pre-authorize, capture and void holds |
@@ -64,6 +65,20 @@ FLW_ENCRYPTION_KEY=xxxxxxxx
 ```
 
 Get your keys from the [Flutterwave dashboard](https://app.flutterwave.com/dashboard/settings/apis). Test keys work against the sandbox automatically.
+
+### The Flutterwave look
+
+Every component, in Blade, React, Vue and Svelte, has the same look as Flutterwave's WooCommerce onboarding and settings screens:
+- **Fonts:** Millik for headings and Moderat for text.
+- **Buttons:** orange primary buttons with dark text.
+- **Fields and tabs:** roomy fields with an orange focus ring, and tabs underlined in orange.
+
+They share one stylesheet, `flutterwave.css`, and the fonts ship with the package, so there are no third-party font requests and no Tailwind setup is needed:
+
+- **Blade:** components link the stylesheet themselves, served by the package from `/flutterwave/assets` (change the path with the `assets_path` config key). It's linked once per page and cached for a year per package version.
+- **React, Vue and Svelte:** the published `index.ts` imports `flutterwave.css`, so Vite bundles it and the fonts with your app.
+
+Restyle everything at once by overriding the CSS tokens on `.flw`. For example, `.flw { --flw-orange: #f5a623; --flw-radius: 4px; }`. The components are light by default, like the plugin. They switch to dark colours when your app turns dark mode on with a `dark` class or `data-theme="dark"` on a parent element. A `className` (or `class`) you pass is added to a component's own classes.
 
 ### Publishing files
 
@@ -140,7 +155,7 @@ Publish the components for your frontend:
 php artisan flutterwave:install --react   # or --vue (Vue 3) or --svelte (Svelte 5)
 ```
 
-This copies TypeScript files into `resources/js/components/flutterwave`. They're yours to restyle, and they don't add an npm dependency. They use Tailwind classes, work with Inertia 1, 2 and 3, and are safe to render with Inertia SSR. You get the same three pieces in each framework:
+This copies TypeScript files into `resources/js/components/flutterwave`, along with `flutterwave.css` and the fonts. They're yours to restyle, and they don't add an npm dependency. They work with Inertia 1, 2 and 3 and are safe to render with Inertia SSR. See [The Flutterwave look](#the-flutterwave-look) for styling. You get the same three pieces in each framework:
 
 - **`FlutterwavePayButton`** opens the inline modal using the config from `inlineConfig()`. It loads Flutterwave's script for you, once.
 - **`VirtualAccount`** shows a `dynamicFor()` account with a copy button and a countdown. It checks for the payment until your webhook listener marks the order paid.
@@ -211,7 +226,7 @@ defineProps<{ order: { id: number; paid: boolean }; checkout: FlutterwaveCheckou
 
 **Bank transfers.** While `paid` is false, `VirtualAccount` reloads the `reloadOnly` props every 5 seconds (`pollInterval`). It pauses while the tab is hidden and stops once the account expires. Your `ChargeCompleted` listener updates the order when the transfer arrives, and the next reload picks that up. Set `pollInterval` to `0` to turn checking off. It also takes `onExpired` (`@expired` in Vue), `paidMessage` and `expiredMessage`; Vue also has `#paid` and `#expired` slots.
 
-**Styling.** In React and Svelte, `class`/`className` replaces the default classes. In Vue, `class` is merged onto the root element, as usual for Vue.
+**Styling.** The components use the shared Flutterwave stylesheet. A `class` or `className` you pass is added to the root element; to change colours, fonts or corners, override the tokens described in [The Flutterwave look](#the-flutterwave-look).
 
 ### Checksum (optional)
 
@@ -477,7 +492,7 @@ A dynamic account is a single-use NGN or GHS account number for one payment. It 
 />
 ```
 
-It shows the bank name, the account number with a copy button, the amount to send and a live countdown. When the account expires, it shows a message instead. Anything between the tags is rendered under the account details, and `class` is merged onto the wrapper. The default styles have zero specificity, so your own CSS always wins.
+It shows the bank name, the account number in a copy field, the amount to send and a live countdown. When the account expires, it shows a message instead. Anything between the tags is rendered under the account details, and `class` is added to the wrapper.
 
 - **Always pass a `tx-ref`.** The account is cached for that reference until it expires, so a page refresh shows the same account number. Without a `tx-ref`, every render creates a new account.
 - Optional attributes: `currency` (`NGN` or `GHS`), `expires` (seconds: 60 up to 2 months for NGN, 48 hours for GHS), `firstname`, `lastname`, `phone`, `narration`, `bank-code` and `expired-message`.
@@ -635,9 +650,56 @@ In Blade, pass the same arrays: `<x-flutterwave-chargebacks :panel="$chargebacks
 - **Chargebacks** shows how long is left to respond, highlighted when it's under two hours, plus the customer's reason and the history. Disputing uploads one JPEG, PNG or PDF under 8MB, checked in the browser and again on the server. Accepting asks for a reason. Without the routes, the list is read-only.
 - **FX converter** walks through each step: request a rate, wait while it's priced, review the rate with a 5-minute countdown, confirm the trade, then watch it until it settles. While a quote or trade is pending, it checks for updates by itself. The quote and trade IDs are kept in the `fx_quote` and `fx_trade` query parameters, so a page reload keeps your place. If Flutterwave approves less than you asked for, the converter says so before you trade.
 
+### Transactions, refunds, settlements and beneficiaries
+
+Four more admin components, with the same setup as the ones above. Each `panel()` takes the request's query string, so filters, page numbers and the item being viewed live in the URL:
+
+```php
+return Inertia::render('Admin/Money', [
+    'transactions' => Flutterwave::transactions()->panel($request->query()),
+    'refunds' => Flutterwave::refunds()->panel($request->query()),
+    'settlements' => Flutterwave::settlements()->panel($request->query()),
+    'beneficiaries' => Flutterwave::beneficiaries()->panel($request->query()),
+]);
+```
+
+```tsx
+import { Beneficiaries, Refunds, Settlements, Transactions } from '@/components/flutterwave';
+
+<Transactions panel={transactions} reloadOnly={['transactions']} />
+```
+
+In Blade: `<x-flutterwave-transactions :panel="$transactions" />`, and the same for `refunds`, `settlements` and `beneficiaries`.
+
+- **Transactions** filters by date, status, customer email and reference. For each payment you can see its timeline, resend its webhook, or refund it in full or in part with a reason, after a confirmation step. A fee checker shows what Flutterwave charges on an amount.
+- **Refunds** lists refunds with their status, transaction and reason.
+- **Settlements** lists payouts with their net amount and any problem Flutterwave flagged, such as a missing settlement account. Open one to see what was collected, the fees, refunds and chargebacks, and the payments it included.
+- **Beneficiaries** adds recipients with a bank dropdown and deletes them. Leave the name empty to use the name on the account.
+
+Refunds, webhook resends and beneficiary changes are written to the audit log.
+
+### Bank dropdown
+
+`BankSelect` lists a country's banks by name and submits the bank code, with a search box when the list is long. Nigeria alone has hundreds of banks.
+
+```blade
+<x-flutterwave-bank-select name="account_bank" :selected="old('account_bank')" />
+<x-flutterwave-bank-select country="GH" />
+```
+
+The Blade component loads the list itself. In React, Vue and Svelte, pass the banks from `Flutterwave::banks()->options($country)` as a prop:
+
+```tsx
+<BankSelect banks={banks} value={bank} onChange={setBank} />    // React
+<BankSelect v-model="bank" :banks="banks" />                    // Vue (3.4+)
+<BankSelect banks={banks} bind:value={bank} />                  // Svelte
+```
+
+The list is cached for a day, since bank lists rarely change.
+
 ### Ready-made admin page
 
-`Route::flutterwaveAdmin()` also registers a page at its prefix (`/admin/flutterwave` in the example above). It shows your wallet balances, the chargebacks that need a response (with an "All" tab), and the FX converter. It checks the same `flutterwave.manage` ability. To change it, publish the views with `php artisan vendor:publish --tag=flutterwave-views` and edit `admin/index.blade.php`. To register only the actions and use your own page, call `Route::flutterwaveAdmin(page: false)`.
+`Route::flutterwaveAdmin()` also registers a page at its prefix (`/admin/flutterwave` in the example above). Its Overview shows your wallet balances, the chargebacks that need a response (with an "All" tab), and the FX converter. Transactions, Refunds, Settlements and Beneficiaries each have their own section, and only the section you're viewing is loaded. It checks the same `flutterwave.manage` ability. To change it, publish the views with `php artisan vendor:publish --tag=flutterwave-views` and edit `admin/index.blade.php`. To register only the actions and use your own page, call `Route::flutterwaveAdmin(page: false)`.
 
 ## Notifications
 
@@ -681,14 +743,25 @@ Flutterwave::redirect([
 ## More
 
 ```php
-Flutterwave::refund($transactionId);              // full refund
-Flutterwave::refund($transactionId, 1000);        // partial refund
-Flutterwave::refunds()->all();
-Flutterwave::balances()->currency('NGN');
-Flutterwave::settlements()->all(['page' => 1]);
+Flutterwave::transactions()->all(['status' => 'successful', 'from' => '2026-10-01']);  // last 30 days when no dates are given
+Flutterwave::transactions()->timeline($transactionId);    // every step the customer took
+Flutterwave::transactions()->fee(10000, 'NGN', 'card');   // what Flutterwave charges on a payment
+Flutterwave::transactions()->resendFailedHooks($transactionId);
+
+Flutterwave::refund($transactionId);                                  // full refund
+Flutterwave::refund($transactionId, 1000, ['comments' => 'Damaged']); // partial, with a reason
+Flutterwave::refunds()->all(['status' => 'completed']);
+Flutterwave::refunds()->find($refundId);
+
+Flutterwave::settlements()->all(['from' => '2026-10-01']);
+Flutterwave::settlements()->find($settlementId);          // includes the transactions it paid out
+
 Flutterwave::beneficiaries()->create('0690000032', '044', 'Jane Doe');
-Flutterwave::transactions()->all(['status' => 'successful']);
-Flutterwave::transactions()->timeline($transactionId);
+Flutterwave::beneficiaries()->all();
+Flutterwave::beneficiaries()->delete($beneficiaryId);
+
+Flutterwave::banks()->options('NG');   // [['code' => '044', 'name' => 'Access Bank'], ...] for a dropdown, cached for a day
+Flutterwave::balances()->currency('NGN');
 ```
 
 Every method returns Flutterwave's JSON response as an array (`status`, `message`, `data` and, for lists, `meta`).
@@ -733,7 +806,7 @@ Commands that refund a customer or move money (`accept-chargeback`, `decline-cha
 
 ## Audit log
 
-Accepting or disputing a chargeback and trading FX, through the admin screens or the Artisan commands, are recorded in the `flutterwave` log channel. Each entry has the action, whether it succeeded, the user ID (or the system user for commands), and the IP address. The admin page is sent with `Cache-Control: no-store`, so browsers and proxies don't keep copies of balances and disputes.
+Accepting or disputing a chargeback, trading FX, refunding a payment, resending a webhook, and adding or deleting a beneficiary, through the admin screens or the Artisan commands, are recorded in the `flutterwave` log channel. Each entry has the action, whether it succeeded, the user ID (or the system user for commands), and the IP address. The admin page is sent with `Cache-Control: no-store`, so browsers and proxies don't keep copies of balances and disputes.
 
 ## Error handling
 

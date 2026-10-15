@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Flutterwave\Payments\Services;
 
+use Illuminate\Support\Facades\Cache;
+
 /**
  * Bank lists and account-name lookups.
  *
@@ -17,6 +19,29 @@ class Banks extends Service
     public function all(string $country = 'NG'): array
     {
         return $this->client->get('banks/'.strtoupper($country));
+    }
+
+    /**
+     * The country's banks as [['code' => '044', 'name' => 'Access Bank'], ...], sorted by name,
+     * for a dropdown. Cached for a day, since bank lists rarely change.
+     */
+    public function options(string $country = 'NG'): array
+    {
+        $country = strtoupper($country);
+
+        return Cache::remember("flutterwave:banks:{$country}", 86400, function () use ($country) {
+            $banks = [];
+
+            foreach ($this->all($country)['data'] ?? [] as $bank) {
+                if (! empty($bank['code']) && ! empty($bank['name'])) {
+                    $banks[(string) $bank['code']] = ['code' => (string) $bank['code'], 'name' => trim((string) $bank['name'])];
+                }
+            }
+
+            usort($banks, static fn (array $a, array $b) => strcasecmp($a['name'], $b['name']));
+
+            return $banks;
+        });
     }
 
     public function branches(int|string $bankId): array

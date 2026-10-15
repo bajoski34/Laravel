@@ -52,7 +52,9 @@ export async function copyText(text: string, fallback?: Element | null): Promise
 
         return true;
     } catch {
-        if (fallback) {
+        if (fallback instanceof HTMLInputElement) {
+            fallback.select();
+        } else if (fallback) {
             const range = document.createRange();
             range.selectNodeContents(fallback);
             window.getSelection()?.removeAllRanges();

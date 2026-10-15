@@ -126,3 +126,87 @@ export interface FlutterwaveFxPanel {
 
 /** Validation errors from the package's routes, as Inertia passes them to onError. */
 export type FlutterwaveErrors = Record<string, string>;
+
+/** One option for a bank dropdown: the bank's name, submitted as its code. From banks()->options(). */
+export interface FlutterwaveBank {
+    code: string;
+    name: string;
+}
+
+export interface FlutterwavePage {
+    total?: number;
+    current_page: number;
+    total_pages: number;
+}
+
+/** From transactions()->panel($request->query()). */
+export interface FlutterwaveTransactionsPanel {
+    items: {
+        id: string | number;
+        tx_ref: string | null;
+        flw_ref: string | null;
+        amount: number | null;
+        charged_amount: number | null;
+        app_fee: number | null;
+        currency: string | null;
+        status: string;
+        payment_type: string | null;
+        narration: string | null;
+        customer_name: string | null;
+        customer_email: string | null;
+        created_at: string | null;
+        /** refund is null for transactions that can't be refunded. */
+        urls: { refund: string | null; resend_webhook: string } | null;
+    }[];
+    page: FlutterwavePage | null;
+    filters: Record<string, string>;
+    error: string | null;
+    timeline: { transaction_id: string; events: { note?: string; action?: string; actor?: string; created_at?: string }[]; error: string | null } | null;
+    fee: { fee?: number; charge_amount?: number; stamp_duty_fee?: number; currency?: string; error: string | null } | null;
+}
+
+/** From refunds()->panel($request->query()). */
+export interface FlutterwaveRefundsPanel {
+    items: { id: number; transaction_id: number | null; amount_refunded: number | null; status: string | null; flw_ref: string | null; comment: string | null; settlement_id: string | null; created_at: string | null }[];
+    page: FlutterwavePage | null;
+    filters: Record<string, string>;
+    error: string | null;
+}
+
+export interface FlutterwaveSettlement {
+    id: number;
+    status?: string;
+    currency?: string;
+    gross_amount?: number;
+    app_fee?: number;
+    merchant_fee?: number;
+    chargeback?: number;
+    refund?: number;
+    stampduty_charge?: number;
+    net_amount?: number;
+    transaction_count?: number;
+    transaction_date?: string;
+    due_date?: string;
+    processed_date?: string | null;
+    flag_message?: string | null;
+}
+
+/** From settlements()->panel($request->query()). */
+export interface FlutterwaveSettlementsPanel {
+    items: FlutterwaveSettlement[];
+    page: FlutterwavePage | null;
+    filters: Record<string, string>;
+    error: string | null;
+    selected: (FlutterwaveSettlement & { transactions: { id?: number; tx_ref?: string; customer_email?: string; charged_amount?: number; app_fee?: number; settlement_amount?: number }[] }) | null;
+}
+
+/** From beneficiaries()->panel($request->query()). */
+export interface FlutterwaveBeneficiariesPanel {
+    items: { id: number; full_name: string | null; account_number: string | null; bank_code: string | null; bank_name: string | null; created_at: string | null; urls: { delete: string } | null }[];
+    page: FlutterwavePage | null;
+    error: string | null;
+    country: string;
+    banks: FlutterwaveBank[];
+    banks_error: string | null;
+    urls: { create: string } | null;
+}

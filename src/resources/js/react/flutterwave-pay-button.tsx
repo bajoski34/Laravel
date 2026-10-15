@@ -8,9 +8,7 @@ type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> &
         config: FlutterwaveCheckoutConfig;
     };
 
-const defaultClassName =
-    'inline-flex items-center justify-center rounded-md bg-orange-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-orange-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 disabled:cursor-not-allowed disabled:opacity-50';
-
+/** Flutterwave's orange primary button, opening the inline checkout. */
 export function FlutterwavePayButton({ config, onSuccess, onClose, children = 'Pay now', className, disabled, ...props }: Props) {
     const { open, ready, error } = useFlutterwaveCheckout();
 
@@ -18,11 +16,12 @@ export function FlutterwavePayButton({ config, onSuccess, onClose, children = 'P
         <button
             type="button"
             {...props}
-            className={className ?? defaultClassName}
+            className={`flw flw-btn flw-btn--primary${className ? ` ${className}` : ''}`}
             disabled={disabled || !ready}
             title={error?.message ?? props.title}
             onClick={() => open(config, { onSuccess, onClose })}
         >
+            {!ready && !error && <span className="flw-btn__spinner" aria-hidden="true" />}
             {children}
         </button>
     );

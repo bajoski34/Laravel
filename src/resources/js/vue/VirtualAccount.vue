@@ -85,45 +85,36 @@ async function copy() {
 </script>
 
 <template>
-    <div class="grid max-w-sm gap-4 rounded-xl border border-neutral-200 p-5 dark:border-neutral-800">
-        <dl class="grid gap-3 transition-opacity" :class="{ 'opacity-40': expired && !paid }">
-            <div>
-                <dt class="text-xs text-neutral-500 dark:text-neutral-400">Bank</dt>
-                <dd class="font-semibold">{{ account.bank_name }}</dd>
-            </div>
-            <div>
-                <dt class="text-xs text-neutral-500 dark:text-neutral-400">Account number</dt>
-                <dd class="flex items-center gap-2">
-                    <span ref="numberEl" class="text-2xl font-semibold tracking-wider tabular-nums">{{ account.account_number }}</span>
-                    <button
-                        type="button"
-                        :disabled="expired || paid"
-                        class="rounded-md border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-100 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-800"
-                        @click="copy"
-                    >
-                        {{ copyLabel }}
-                    </button>
-                </dd>
-            </div>
-            <div v-if="amount > 0">
-                <dt class="text-xs text-neutral-500 dark:text-neutral-400">Amount to send</dt>
-                <dd class="font-semibold">{{ account.currency ?? 'NGN' }} {{ formatAmount(amount) }}</dd>
-            </div>
-        </dl>
+    <div class="flw flw-card flw-card--narrow flw-account" :class="{ 'is-expired': expired && !paid }">
+        <div class="flw-stack">
+            <h3 class="flw-title">Pay by bank transfer</h3>
+            <p class="flw-text">Send the exact amount to this account from your banking app.</p>
+        </div>
+        <hr class="flw-rule" />
 
-        <p v-if="account.note" class="text-sm">{{ account.note }}</p>
+        <div class="flw-account__details flw-stack" style="gap: 16px">
+            <div class="flw-field">
+                <span class="flw-field__label">Account number</span>
+                <div class="flw-copyfield flw-account__number">
+                    <input ref="numberEl" class="flw-input" readonly :value="account.account_number" aria-label="Account number" />
+                    <button type="button" :disabled="expired || paid" class="flw-copyfield__btn" @click="copy">{{ copyLabel }}</button>
+                </div>
+            </div>
+            <dl class="flw-dl">
+                <div><dt>Bank</dt><dd>{{ account.bank_name }}</dd></div>
+                <div v-if="amount > 0"><dt>Amount to send</dt><dd>{{ account.currency ?? 'NGN' }} {{ formatAmount(amount) }}</dd></div>
+            </dl>
+            <p v-if="account.note" class="flw-muted">{{ account.note }}</p>
+        </div>
 
         <slot />
 
-        <div aria-live="polite" class="text-sm">
-            <p v-if="paid" class="font-medium text-green-700 dark:text-green-400">
-                <slot name="paid">{{ paidMessage }}</slot>
-            </p>
-            <p v-else-if="expired" class="text-red-700 dark:text-red-400">
-                <slot name="expired">{{ expiredMessage }}</slot>
-            </p>
-            <p v-else-if="secondsLeft !== null" class="text-neutral-500 dark:text-neutral-400">
-                Expires in <span class="tabular-nums">{{ formatDuration(secondsLeft) }}</span>
+        <div aria-live="polite">
+            <p v-if="paid" class="flw-notice flw-notice--success"><slot name="paid">{{ paidMessage }}</slot></p>
+            <p v-else-if="expired" class="flw-notice flw-notice--error"><slot name="expired">{{ expiredMessage }}</slot></p>
+            <p v-else-if="secondsLeft !== null" class="flw-countdown">
+                <span v-if="pollInterval > 0" class="flw-ring" aria-hidden="true" />
+                Expires in <strong>{{ formatDuration(secondsLeft) }}</strong>
                 <template v-if="pollInterval > 0"> · We’ll update this page once your transfer arrives.</template>
             </p>
         </div>

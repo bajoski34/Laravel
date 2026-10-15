@@ -39,7 +39,7 @@ export function VirtualAccount({
     const secondsLeft = useCountdown(account);
     const expired = secondsLeft === 0;
     const [copyLabel, setCopyLabel] = useState('Copy');
-    const numberRef = useRef<HTMLSpanElement>(null);
+    const numberRef = useRef<HTMLInputElement>(null);
     const notified = useRef({ paid: false, expired: false });
 
     useEffect(() => {
@@ -70,52 +70,42 @@ export function VirtualAccount({
     };
 
     const amount = Number(account.amount ?? 0);
+    const expired_ = expired && !paid;
 
     return (
-        <div className={className ?? 'grid max-w-sm gap-4 rounded-xl border border-neutral-200 p-5 dark:border-neutral-800'}>
-            <dl className={`grid gap-3 transition-opacity ${expired && !paid ? 'opacity-40' : ''}`}>
-                <div>
-                    <dt className="text-xs text-neutral-500 dark:text-neutral-400">Bank</dt>
-                    <dd className="font-semibold">{account.bank_name}</dd>
-                </div>
-                <div>
-                    <dt className="text-xs text-neutral-500 dark:text-neutral-400">Account number</dt>
-                    <dd className="flex items-center gap-2">
-                        <span ref={numberRef} className="text-2xl font-semibold tracking-wider tabular-nums">
-                            {account.account_number}
-                        </span>
-                        <button
-                            type="button"
-                            onClick={copy}
-                            disabled={expired || paid}
-                            className="rounded-md border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-100 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-800"
-                        >
-                            {copyLabel}
-                        </button>
-                    </dd>
-                </div>
-                {amount > 0 && (
-                    <div>
-                        <dt className="text-xs text-neutral-500 dark:text-neutral-400">Amount to send</dt>
-                        <dd className="font-semibold">
-                            {account.currency ?? 'NGN'} {formatAmount(amount)}
-                        </dd>
-                    </div>
-                )}
-            </dl>
+        <div className={`flw flw-card flw-card--narrow flw-account${expired_ ? ' is-expired' : ''}${className ? ` ${className}` : ''}`}>
+            <div className="flw-stack">
+                <h3 className="flw-title">Pay by bank transfer</h3>
+                <p className="flw-text">Send the exact amount to this account from your banking app.</p>
+            </div>
+            <hr className="flw-rule" />
 
-            {account.note && <p className="text-sm">{account.note}</p>}
+            <div className="flw-account__details flw-stack" style={{ gap: 16 }}>
+                <div className="flw-field">
+                    <span className="flw-field__label">Account number</span>
+                    <div className="flw-copyfield flw-account__number">
+                        <input ref={numberRef} className="flw-input" readOnly value={account.account_number} aria-label="Account number" />
+                        <button type="button" onClick={copy} disabled={expired || paid} className="flw-copyfield__btn">{copyLabel}</button>
+                    </div>
+                </div>
+                <dl className="flw-dl">
+                    <div><dt>Bank</dt><dd>{account.bank_name}</dd></div>
+                    {amount > 0 && <div><dt>Amount to send</dt><dd>{account.currency ?? 'NGN'} {formatAmount(amount)}</dd></div>}
+                </dl>
+                {account.note && <p className="flw-muted">{account.note}</p>}
+            </div>
 
             {children}
 
-            <div aria-live="polite" className="text-sm">
+            <div aria-live="polite">
                 {paid ? (
-                    <p className="font-medium text-green-700 dark:text-green-400">{paidMessage}</p>
+                    <p className="flw-notice flw-notice--success">{paidMessage}</p>
                 ) : expired ? (
-                    <p className="text-red-700 dark:text-red-400">{expiredMessage}</p>
+                    <p className="flw-notice flw-notice--error">{expiredMessage}</p>
                 ) : secondsLeft !== null ? (
-                    <p className="text-neutral-500 dark:text-neutral-400">
-                        Expires in <span className="tabular-nums">{formatDuration(secondsLeft)}</span>
+                    <p className="flw-countdown">
+                        {pollInterval > 0 && <span className="flw-ring" aria-hidden="true" />}
+                        Expires in <strong>{formatDuration(secondsLeft)}</strong>
                         {pollInterval > 0 && ' · We’ll update this page once your transfer arrives.'}
                     </p>
                 ) : null}

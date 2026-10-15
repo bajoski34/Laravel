@@ -1,50 +1,39 @@
-@once
-<style>
-    :where(.flutterwave-virtual-account) { display: grid; gap: .75rem; max-width: 24rem; padding: 1.25rem; border: 1px solid #e5e7eb; border-radius: .75rem; font-family: inherit; }
-    :where(.flutterwave-virtual-account dl) { display: grid; gap: .5rem; margin: 0; }
-    :where(.flutterwave-virtual-account dt) { font-size: .8rem; color: #6b7280; }
-    :where(.flutterwave-virtual-account dd) { margin: 0; font-weight: 600; }
-    :where(.flutterwave-virtual-account__number) { display: flex; align-items: center; gap: .5rem; font-size: 1.5rem; letter-spacing: .05em; font-variant-numeric: tabular-nums; }
-    :where(.flutterwave-virtual-account__copy) { font-size: .8rem; padding: .25rem .6rem; border: 1px solid #d1d5db; border-radius: .375rem; background: transparent; cursor: pointer; }
-    :where(.flutterwave-virtual-account__expiry) { font-size: .875rem; color: #6b7280; }
-    :where(.flutterwave-virtual-account.is-expired .flutterwave-virtual-account__details) { opacity: .4; }
-    :where(.flutterwave-virtual-account__expired) { color: #b91c1c; font-size: .875rem; }
-</style>
-@endonce
-<div id="{{ $componentId }}" {{ $attributes->merge(['class' => 'flutterwave-virtual-account']) }}
+@include('flutterwave::components.partials.styles')
+<div id="{{ $componentId }}" {{ $attributes->merge(['class' => 'flw flw-card flw-card--narrow flw-account flutterwave-virtual-account']) }}
      @if ($expiresAt) data-expires-at="{{ $expiresAt }}" @endif>
-    <dl class="flutterwave-virtual-account__details">
-        <div>
-            <dt>Bank</dt>
-            <dd>{{ $details['bank_name'] ?? '' }}</dd>
-        </div>
-        <div>
-            <dt>Account number</dt>
-            <dd class="flutterwave-virtual-account__number">
-                <span data-account-number>{{ $details['account_number'] ?? '' }}</span>
-                <button type="button" class="flutterwave-virtual-account__copy" data-copy>Copy</button>
-            </dd>
-        </div>
-        @if (! empty($details['amount']) && (float) $details['amount'] > 0)
-            <div>
-                <dt>Amount to send</dt>
-                <dd>{{ $details['currency'] ?? $currency }} {{ number_format((float) $details['amount'], 2) }}</dd>
-            </div>
-        @endif
-    </dl>
+    <div class="flw-stack">
+        <h3 class="flw-title">Pay by bank transfer</h3>
+        <p class="flw-text">Send the exact amount to this account from your banking app.</p>
+    </div>
+    <hr class="flw-rule">
 
-    @if (! empty($details['note']))
-        <p class="flutterwave-virtual-account__note">{{ $details['note'] }}</p>
-    @endif
+    <div class="flw-account__details flw-stack" style="gap: 16px">
+        <div class="flw-field">
+            <span class="flw-field__label">Account number</span>
+            <div class="flw-copyfield flw-account__number">
+                <input class="flw-input" readonly value="{{ $details['account_number'] ?? '' }}" data-account-number aria-label="Account number">
+                <button type="button" class="flw-copyfield__btn" data-copy>Copy</button>
+            </div>
+        </div>
+        <dl class="flw-dl">
+            <div><dt>Bank</dt><dd>{{ $details['bank_name'] ?? '' }}</dd></div>
+            @if (! empty($details['amount']) && (float) $details['amount'] > 0)
+                <div><dt>Amount to send</dt><dd>{{ $details['currency'] ?? $currency }} {{ number_format((float) $details['amount'], 2) }}</dd></div>
+            @endif
+        </dl>
+        @if (! empty($details['note']))
+            <p class="flw-muted">{{ $details['note'] }}</p>
+        @endif
+    </div>
 
     {{ $slot }}
 
     @if ($expiresAt)
-        <p class="flutterwave-virtual-account__expiry">Expires in <span data-countdown></span></p>
+        <p class="flw-countdown flutterwave-virtual-account__expiry"><span class="flw-ring" aria-hidden="true"></span>Expires in <strong data-countdown></strong></p>
     @elseif (! empty($details['expiry_date']) && $details['expiry_date'] !== 'N/A')
-        <p class="flutterwave-virtual-account__expiry">Expires {{ $details['expiry_date'] }}</p>
+        <p class="flw-muted">Expires {{ $details['expiry_date'] }}</p>
     @endif
-    <p class="flutterwave-virtual-account__expired" data-expired hidden>{{ $expiredMessage }}</p>
+    <p class="flw-notice flw-notice--error" data-expired hidden>{{ $expiredMessage }}</p>
 </div>
 <script>
     (function () {
@@ -58,16 +47,13 @@
 
         // Browsers refuse the clipboard on plain http:// and in some embedded views: select the number instead.
         function selectNumber() {
-            var range = document.createRange();
-            range.selectNodeContents(root.querySelector('[data-account-number]'));
-            window.getSelection().removeAllRanges();
-            window.getSelection().addRange(range);
+            root.querySelector('[data-account-number]').select();
             done('Selected');
         }
 
         copy.addEventListener('click', function () {
             try {
-                navigator.clipboard.writeText(root.querySelector('[data-account-number]').textContent.trim()).then(function () { done('Copied'); }, selectNumber);
+                navigator.clipboard.writeText(root.querySelector('[data-account-number]').value).then(function () { done('Copied'); }, selectNumber);
             } catch (e) {
                 selectNumber();
             }

@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static array verifyTransaction(int|string $transactionId)
  * @method static array verifyTransactionReference(string $txRef)
  * @method static bool isSuccessful(int|string $transactionId, int|float|null $expectedAmount = null, ?string $expectedCurrency = null, ?string $expectedReference = null)
- * @method static array refund(int|string $transactionId, int|float|string|null $amount = null)
+ * @method static array refund(int|string $transactionId, int|float|string|null $amount = null, array $options = [])
  * @method static mixed config(?string $key = null)
  * @method static \Flutterwave\Payments\Services\Transactions transactions()
  * @method static \Flutterwave\Payments\Services\Transfers transfers()

@@ -1,7 +1,8 @@
+@include('flutterwave::components.partials.styles')
 @once
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 @endonce
-<button type="button" id="{{ $buttonId }}" {{ $attributes->merge(['class' => 'flutterwave-pay-button']) }}>
+<button type="button" id="{{ $buttonId }}" {{ $attributes->merge(['class' => 'flw flw-btn flw-btn--primary flutterwave-pay-button']) }}>
     @if (trim((string) $slot) !== ''){{ $slot }}@else{{ $label }}@endif
 </button>
 <script>

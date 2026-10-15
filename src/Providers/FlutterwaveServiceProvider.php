@@ -27,15 +27,23 @@ use Flutterwave\Payments\Events\ChargebackUpdated;
 use Flutterwave\Payments\Events\TransferCompleted;
 use Flutterwave\Payments\Flutterwave;
 use Flutterwave\Payments\Http\Controllers\AdminController;
+use Flutterwave\Payments\Http\Controllers\AssetController;
+use Flutterwave\Payments\Http\Controllers\BeneficiaryController;
 use Flutterwave\Payments\Http\Controllers\ChargebackController;
 use Flutterwave\Payments\Http\Controllers\FxController;
+use Flutterwave\Payments\Http\Controllers\TransactionController;
 use Flutterwave\Payments\Http\Controllers\WebhookController;
 use Flutterwave\Payments\Http\Middleware\VerifyWebhookSignature;
 use Flutterwave\Payments\Notifications\ChargebackRaised;
 use Flutterwave\Payments\Notifications\TransferFailed;
+use Flutterwave\Payments\View\Components\BankSelect;
+use Flutterwave\Payments\View\Components\Beneficiaries;
 use Flutterwave\Payments\View\Components\Chargebacks;
 use Flutterwave\Payments\View\Components\FxConverter;
 use Flutterwave\Payments\View\Components\PayButton;
+use Flutterwave\Payments\View\Components\Refunds;
+use Flutterwave\Payments\View\Components\Settlements;
+use Flutterwave\Payments\View\Components\Transactions;
 use Flutterwave\Payments\View\Components\VirtualAccount;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
@@ -52,6 +60,11 @@ final class FlutterwaveServiceProvider extends ServiceProvider
         Blade::component('flutterwave-virtual-account', VirtualAccount::class);
         Blade::component('flutterwave-chargebacks', Chargebacks::class);
         Blade::component('flutterwave-fx', FxConverter::class);
+        Blade::component('flutterwave-bank-select', BankSelect::class);
+        Blade::component('flutterwave-transactions', Transactions::class);
+        Blade::component('flutterwave-refunds', Refunds::class);
+        Blade::component('flutterwave-settlements', Settlements::class);
+        Blade::component('flutterwave-beneficiaries', Beneficiaries::class);
 
         $this->publishes([
             __DIR__.'/../config/flutterwave.php' => config_path('flutterwave.php'),
@@ -165,6 +178,10 @@ final class FlutterwaveServiceProvider extends ServiceProvider
                 Route::post('chargebacks/{chargeback}/decline', [ChargebackController::class, 'decline'])->name('chargebacks.decline');
                 Route::post('fx/quotes', [FxController::class, 'quote'])->name('fx.quote');
                 Route::post('fx/trades', [FxController::class, 'trade'])->name('fx.trade');
+                Route::post('transactions/{transaction}/refund', [TransactionController::class, 'refund'])->name('transactions.refund');
+                Route::post('transactions/{transaction}/resend-webhook', [TransactionController::class, 'resendWebhook'])->name('transactions.resend-webhook');
+                Route::post('beneficiaries', [BeneficiaryController::class, 'store'])->name('beneficiaries.store');
+                Route::delete('beneficiaries/{beneficiary}', [BeneficiaryController::class, 'destroy'])->name('beneficiaries.destroy');
             });
         });
     }
@@ -180,6 +197,11 @@ final class FlutterwaveServiceProvider extends ServiceProvider
                 ->middleware(array_merge((array) config('flutterwave.webhook.middleware', []), [VerifyWebhookSignature::class]))
                 ->name('flutterwave.webhooks.handle');
         }
+
+        // The Blade components' stylesheet and fonts.
+        Route::get(trim((string) config('flutterwave.assets_path', 'flutterwave/assets'), '/').'/{file}', AssetController::class)
+            ->where('file', '.+')
+            ->name('flutterwave.assets');
 
         // Example checkout/callback routes, published with --tag=flutterwave-routes.
         if (file_exists(base_path('routes/vendor/flutterwave/web.php'))) {

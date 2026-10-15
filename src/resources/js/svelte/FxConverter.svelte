@@ -11,15 +11,12 @@
         reloadOnly?: string[];
         /** How often to check a pending quote or trade, in milliseconds. */
         pollInterval?: number;
-        /** Replaces the default classes. */
+        /** Added to the wrapper. */
         class?: string;
     }
 
     let { panel, reloadOnly, pollInterval = 3000, class: className }: Props = $props();
 
-    const primary = 'rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200';
-    const quiet = 'text-sm text-neutral-600 underline-offset-2 hover:underline dark:text-neutral-300';
-    const input = 'rounded-md border border-neutral-300 bg-white px-2 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950';
 
     const quote = $derived(panel.quote);
     const trade = $derived(panel.trade);
@@ -115,98 +112,92 @@
     }
 </script>
 
-<div class={className ?? 'grid max-w-md gap-4 rounded-xl border border-neutral-200 p-5 dark:border-neutral-800'}>
-    {#if panel.error}
-        <p role="alert" class="text-sm text-red-700 dark:text-red-400">{panel.error}</p>
-    {/if}
+<div class="flw flw-card flw-card--narrow{className ? ` ${className}` : ''}">
+    {#if panel.error}<p role="alert" class="flw-notice flw-notice--error">{panel.error}</p>{/if}
 
     {#if trade}
-        <div class="grid gap-3" aria-live="polite">
-            <h3 class="text-base font-semibold">{trade.status === 'SETTLED' ? 'Trade settled' : trade.status === 'FAILED' ? 'Trade failed' : 'Trade in progress…'}</h3>
-            <p class="text-sm {trade.status === 'FAILED' ? 'text-red-700 dark:text-red-400' : 'text-neutral-600 dark:text-neutral-300'}">
-                {#if trade.status === 'SETTLED'}
-                    Sold {formatMoney(trade.base, trade.sold)} for {formatMoney(trade.target, trade.bought)}{trade.recipient ? `, paid to ${trade.recipient}` : ''}.
-                {:else if trade.status === 'FAILED'}
-                    {trade.message ?? 'Flutterwave couldn’t complete the trade.'}
-                {:else}
-                    Selling {formatMoney(trade.base, trade.sold)} for {formatMoney(trade.target, trade.bought)}. This updates by itself.
-                {/if}
-            </p>
-            <p class="text-xs text-neutral-500 dark:text-neutral-400">Reference {trade.reference ?? trade.id}</p>
-            {#if !trade.pending}
-                <button type="button" class="{primary} w-fit" onclick={startOver}>Start another conversion</button>
+        <div class="flw-stack" style="gap: 14px" aria-live="polite">
+            <h3 class="flw-title">{trade.status === 'SETTLED' ? 'Trade settled' : trade.status === 'FAILED' ? 'Trade failed' : 'Trade in progress'}</h3>
+            <hr class="flw-rule" />
+            {#if trade.status === 'SETTLED'}
+                <p class="flw-text">Sold {formatMoney(trade.base, trade.sold)} for <strong>{formatMoney(trade.target, trade.bought)}</strong>{trade.recipient ? `, paid to ${trade.recipient}` : ''}.</p>
+            {:else if trade.status === 'FAILED'}
+                <p class="flw-notice flw-notice--error">{trade.message ?? 'Flutterwave couldn’t complete the trade.'}</p>
+            {:else}
+                <p class="flw-countdown"><span class="flw-ring" aria-hidden="true"></span>Selling {formatMoney(trade.base, trade.sold)} for {formatMoney(trade.target, trade.bought)}. This updates by itself.</p>
             {/if}
+            <p class="flw-muted">Reference {trade.reference ?? trade.id}</p>
+            {#if !trade.pending}<button type="button" class="flw-btn flw-btn--primary flw-btn--block" onclick={startOver}>Start another conversion</button>{/if}
         </div>
     {:else if quote && quote.pending}
-        <div class="grid gap-2" aria-live="polite">
-            <h3 class="text-base font-semibold">Getting a rate…</h3>
-            <p class="text-sm text-neutral-500 dark:text-neutral-400">Flutterwave usually prices a quote within a few seconds. This updates by itself.</p>
+        <div class="flw-stack" style="gap: 10px" aria-live="polite">
+            <h3 class="flw-title">Getting a rate</h3>
+            <hr class="flw-rule" />
+            <p class="flw-countdown"><span class="flw-ring" aria-hidden="true"></span>Flutterwave usually prices a quote within a few seconds. This updates by itself.</p>
         </div>
     {:else if quote && (!quote.tradable || expired)}
-        <div class="grid gap-3" aria-live="polite">
-            <h3 class="text-base font-semibold">{expired ? 'This rate has expired' : 'No rate available'}</h3>
-            <p class="text-sm text-neutral-600 dark:text-neutral-300">{expired ? 'Rates are held for 5 minutes. Get a new one to continue.' : quote.message}</p>
-            <button type="button" class="{primary} w-fit" onclick={startOver}>Get a new rate</button>
+        <div class="flw-stack" style="gap: 14px" aria-live="polite">
+            <h3 class="flw-title">{expired ? 'This rate has expired' : 'No rate available'}</h3>
+            <hr class="flw-rule" />
+            <p class="flw-text">{expired ? 'Rates are held for 5 minutes. Get a new one to continue.' : quote.message}</p>
+            <button type="button" class="flw-btn flw-btn--primary flw-btn--block" onclick={startOver}>Get a new rate</button>
         </div>
     {:else if quote}
-        <form class="grid gap-4" onsubmit={tradeQuote}>
-            <div class="flex flex-wrap items-baseline justify-between gap-2">
-                <h3 class="text-base font-semibold">Your rate</h3>
-                {#if secondsLeft !== null}
-                    <span class="text-sm tabular-nums text-neutral-500 dark:text-neutral-400">Held for {formatDuration(secondsLeft)}</span>
-                {/if}
+        <form class="flw-stack" style="gap: 16px" onsubmit={tradeQuote}>
+            <div class="flw-row">
+                <h3 class="flw-title">Your rate</h3>
+                {#if secondsLeft !== null}<p class="flw-countdown">Held for <strong>{formatDuration(secondsLeft)}</strong></p>{/if}
             </div>
-            <dl class="grid grid-cols-2 gap-3">
-                <div><dt class="text-xs text-neutral-500 dark:text-neutral-400">You sell</dt><dd class="font-semibold tabular-nums">{sell}</dd></div>
-                <div><dt class="text-xs text-neutral-500 dark:text-neutral-400">You get</dt><dd class="font-semibold tabular-nums">{get}</dd></div>
-                <div class="col-span-2"><dt class="text-xs text-neutral-500 dark:text-neutral-400">Rate</dt><dd class="tabular-nums">1 {quote.base} = {quote.rate} {quote.target}</dd></div>
+            <hr class="flw-rule" />
+            <dl class="flw-dl">
+                <div><dt>You sell</dt><dd>{sell}</dd></div>
+                <div><dt>You get</dt><dd>{get}</dd></div>
+                <div><dt>Rate</dt><dd>1 {quote.base} = {quote.rate} {quote.target}</dd></div>
             </dl>
-            {#if trimmed}
-                <p class="rounded-md bg-amber-50 p-2 text-sm text-amber-900 dark:bg-amber-400/10 dark:text-amber-300">Flutterwave approved {sell} of the {formatMoney(quote.base, quote.quantity)} you asked for.</p>
-            {/if}
+            {#if trimmed}<p class="flw-notice flw-notice--warning">Flutterwave approved {sell} of the {formatMoney(quote.base, quote.quantity)} you asked for.</p>{/if}
             {#if panel.urls}
-                <label class="grid gap-1 text-sm">
-                    <span class="font-medium">Note for your records</span>
-                    <input bind:value={narration} placeholder="Supplier payment" class={input} oninput={() => (confirming = false)} />
+                <label class="flw-field{error ? ' has-error' : ''}">
+                    <span class="flw-field__label">Note for your records</span>
+                    <input bind:value={narration} placeholder="Supplier payment" class="flw-input" oninput={() => (confirming = false)} />
+                    {#if error}<span role="alert" class="flw-field__error">{error}</span>{/if}
                 </label>
-                {#if error}
-                    <p role="alert" class="text-sm text-red-700 dark:text-red-400">{error}</p>
-                {/if}
-                {#if confirming}
-                    <p class="text-sm font-medium">Sell {sell} for {get}? Trades can’t be undone.</p>
-                {/if}
-                <div class="flex flex-wrap items-center gap-3">
-                    <button type="submit" disabled={busy} class={primary}>{busy ? 'Trading…' : confirming ? 'Confirm trade' : 'Trade at this rate'}</button>
-                    <button type="button" class={quiet} onclick={() => (confirming ? (confirming = false) : startOver())}>{confirming ? 'Back' : 'Get a different rate'}</button>
-                </div>
+                {#if confirming}<p class="flw-notice flw-notice--info">Sell {sell} for {get}? Trades can’t be undone.</p>{/if}
+                <button type="submit" disabled={busy} class="flw-btn flw-btn--primary flw-btn--block">
+                    {#if busy}<span class="flw-btn__spinner" aria-hidden="true"></span>{/if}
+                    {busy ? 'Trading' : confirming ? 'Confirm trade' : 'Trade at this rate'}
+                </button>
+                <button type="button" class="flw-link-btn flw-link-btn--quiet" onclick={() => (confirming ? (confirming = false) : startOver())}>{confirming ? 'Back' : 'Get a different rate'}</button>
             {/if}
         </form>
     {:else if !panel.urls}
-        <p class="text-sm text-neutral-500 dark:text-neutral-400">Add Route::flutterwaveAdmin() to your routes to request quotes here.</p>
+        <p class="flw-text">Add Route::flutterwaveAdmin() to your routes to request quotes here.</p>
     {:else}
-        <form class="grid gap-4" onsubmit={requestQuote}>
-            <div class="grid gap-1">
-                <h3 class="text-base font-semibold">Convert currency</h3>
-                <p class="text-sm text-neutral-500 dark:text-neutral-400">Get a rate, then trade it within 5 minutes. Weekdays only, from USD 1,000 or its equivalent.</p>
+        <form class="flw-stack" style="gap: 16px" onsubmit={requestQuote}>
+            <div class="flw-stack">
+                <h3 class="flw-title">Convert currency</h3>
+                <p class="flw-text">Get a rate, then trade it within 5 minutes. Weekdays only, from USD 1,000 or its equivalent.</p>
             </div>
-            <div class="grid gap-3 sm:grid-cols-[auto_1fr]">
-                <label class="grid gap-1 text-sm">
-                    <span class="font-medium">Convert</span>
-                    <select value={selected} onchange={(event) => (pair = event.currentTarget.value)} class={input}>
+            <hr class="flw-rule" />
+            <label class="flw-field">
+                <span class="flw-field__label">Convert</span>
+                <span class="flw-select">
+                    <select value={selected} onchange={(event) => (pair = event.currentTarget.value)} class="flw-input">
                         {#each panel.pairs as [from, to] (`${from}/${to}`)}
                             <option value="{from}/{to}">{from} to {to}</option>
                         {/each}
                     </select>
-                </label>
-                <label class="grid gap-1 text-sm">
-                    <span class="font-medium">Amount of {base} to sell</span>
-                    <input bind:value={quantity} inputmode="decimal" placeholder="2000000" class="{input} tabular-nums" />
-                </label>
-            </div>
-            {#if error}
-                <p role="alert" class="text-sm text-red-700 dark:text-red-400">{error}</p>
-            {/if}
-            <button type="submit" disabled={busy} class="{primary} w-fit">{busy ? 'Requesting…' : `Get a ${base} to ${target} rate`}</button>
+                    <span class="flw-select__chevron" aria-hidden="true"><svg viewBox="0 0 16 16" width="16" height="16"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg></span>
+                </span>
+            </label>
+            <label class="flw-field{error ? ' has-error' : ''}">
+                <span class="flw-field__label">Amount of {base} to sell</span>
+                <input bind:value={quantity} inputmode="decimal" placeholder="2000000" class="flw-input flw-num" />
+                {#if error}<span role="alert" class="flw-field__error">{error}</span>{/if}
+            </label>
+            <button type="submit" disabled={busy} class="flw-btn flw-btn--primary flw-btn--block">
+                {#if busy}<span class="flw-btn__spinner" aria-hidden="true"></span>{/if}
+                {busy ? 'Requesting' : `Get a ${base} to ${target} rate`}
+            </button>
         </form>
     {/if}
 </div>

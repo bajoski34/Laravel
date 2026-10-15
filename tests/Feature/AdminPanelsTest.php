@@ -260,11 +260,11 @@ it('renders each fx step in blade', function () {
     $settled = Blade::render('<x-flutterwave-fx :panel="$panel" />', ['panel' => fxPanel(['status' => 'READY'], ['id' => '08e27e03', 'status' => 'SETTLED', 'base' => 'NGN', 'target' => 'USD', 'sold' => 1517759, 'bought' => 1000.203181, 'recipient' => 'MythCo.', 'reference' => 'TRD-86ad', 'message' => null, 'pending' => false])]);
 
     expect($request)->toContain('action="/admin/flutterwave/fx/quotes"')->toContain('NGN to USD')->not->toContain('window.location.reload')
-        ->and($pending)->toContain('Getting a rate…')->toContain('window.location.reload')
-        ->and($ready)->toContain('NGN 1,517,759.00')->toContain('USD 1,000.20')->toContain('data-flw-countdown="245"')->toContain('Held for 4:05')
+        ->and($pending)->toContain('Getting a rate')->toContain('window.location.reload')
+        ->and($ready)->toContain('NGN 1,517,759.00')->toContain('USD 1,000.20')->toContain('data-flw-countdown="245"')->toContain('Held for <strong data-flw-countdown="245">4:05</strong>')
         ->toContain('Flutterwave approved NGN 1,517,759.00 of the NGN 1,617,759.00 you asked for.')->toContain('name="quote_id" value="570e21b4"')
         ->and($expired)->toContain('This rate has expired')->not->toContain('action="/admin/flutterwave/fx/trades"')
-        ->and($settled)->toContain('Sold NGN 1,517,759.00 for USD 1,000.20, paid to MythCo.')->toContain('Start another conversion')->not->toContain('window.location.reload');
+        ->and($settled)->toContain('Sold NGN 1,517,759.00 for <strong>USD 1,000.20</strong>, paid to MythCo.')->toContain('Start another conversion')->not->toContain('window.location.reload');
 });
 
 it('renders the fx converter without actions when the routes are missing', function () {

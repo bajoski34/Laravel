@@ -1,87 +1,100 @@
-@include('flutterwave::components.admin-styles')
+@include('flutterwave::components.partials.styles')
 @php($quote = $panel['quote'])
 @php($trade = $panel['trade'])
 @php($money = fn ($currency, $amount) => \Flutterwave\Payments\View\Components\FxConverter::money($currency, $amount))
-<div id="{{ $componentId }}" {{ $attributes->merge(['class' => 'flw-admin flw-card']) }} style="max-width: 28rem">
+<div id="{{ $componentId }}" {{ $attributes->merge(['class' => 'flw flw-card flw-card--narrow']) }}>
     @if ($error = $firstError(['flutterwave', 'quantity', 'base', 'target', 'narration', 'quote_id']))
-        <p class="flw-error" role="alert">{{ $error }}</p>
+        <p class="flw-notice flw-notice--error" role="alert">{{ $error }}</p>
     @endif
     @if ($panel['error'])
-        <p class="flw-error" role="alert">{{ $panel['error'] }}</p>
+        <p class="flw-notice flw-notice--error" role="alert">{{ $panel['error'] }}</p>
     @endif
 
     @if ($trade)
-        <div aria-live="polite">
-            <strong>{{ $trade['status'] === 'SETTLED' ? 'Trade settled' : ($trade['status'] === 'FAILED' ? 'Trade failed' : 'Trade in progress…') }}</strong>
-            <p class="{{ $trade['status'] === 'FAILED' ? 'flw-error' : '' }}">
-                @if ($trade['status'] === 'SETTLED')
-                    Sold {{ $money($trade['base'], $trade['sold']) }} for {{ $money($trade['target'], $trade['bought']) }}{{ $trade['recipient'] ? ', paid to '.$trade['recipient'] : '' }}.
-                @elseif ($trade['status'] === 'FAILED')
-                    {{ $trade['message'] ?? 'Flutterwave couldn’t complete the trade.' }}
-                @else
-                    Selling {{ $money($trade['base'], $trade['sold']) }} for {{ $money($trade['target'], $trade['bought']) }}. This page refreshes by itself.
-                @endif
-            </p>
+        <div class="flw-stack" aria-live="polite" style="gap: 10px">
+            <h3 class="flw-title">{{ $trade['status'] === 'SETTLED' ? 'Trade settled' : ($trade['status'] === 'FAILED' ? 'Trade failed' : 'Trade in progress') }}</h3>
+            <hr class="flw-rule">
+            @if ($trade['status'] === 'SETTLED')
+                <p class="flw-text">Sold {{ $money($trade['base'], $trade['sold']) }} for <strong>{{ $money($trade['target'], $trade['bought']) }}</strong>{{ $trade['recipient'] ? ', paid to '.$trade['recipient'] : '' }}.</p>
+            @elseif ($trade['status'] === 'FAILED')
+                <p class="flw-notice flw-notice--error">{{ $trade['message'] ?? 'Flutterwave couldn’t complete the trade.' }}</p>
+            @else
+                <p class="flw-countdown"><span class="flw-ring" aria-hidden="true"></span>Selling {{ $money($trade['base'], $trade['sold']) }} for {{ $money($trade['target'], $trade['bought']) }}. This page refreshes by itself.</p>
+            @endif
             <p class="flw-muted">Reference {{ $trade['reference'] ?? $trade['id'] }}</p>
         </div>
         @unless ($trade['pending'])
-            <a class="flw-button" href="{{ $startOverUrl() }}">Start another conversion</a>
+            <a class="flw-btn flw-btn--primary flw-btn--block" href="{{ $startOverUrl() }}">Start another conversion</a>
         @endunless
     @elseif ($quote && $quote['pending'])
-        <div aria-live="polite">
-            <strong>Getting a rate…</strong>
-            <p class="flw-muted">Flutterwave usually prices a quote within a few seconds. This page refreshes by itself.</p>
+        <div class="flw-stack" aria-live="polite" style="gap: 10px">
+            <h3 class="flw-title">Getting a rate</h3>
+            <hr class="flw-rule">
+            <p class="flw-countdown"><span class="flw-ring" aria-hidden="true"></span>Flutterwave usually prices a quote within a few seconds. This page refreshes by itself.</p>
         </div>
     @elseif ($quote && ! $quote['tradable'])
-        <strong>{{ $quote['status'] === 'EXPIRED' ? 'This rate has expired' : 'No rate available' }}</strong>
-        <p>{{ $quote['status'] === 'EXPIRED' ? 'Rates are held for 5 minutes. Get a new one to continue.' : $quote['message'] }}</p>
-        <a class="flw-button" href="{{ $startOverUrl() }}">Get a new rate</a>
+        <div class="flw-stack" style="gap: 10px">
+            <h3 class="flw-title">{{ $quote['status'] === 'EXPIRED' ? 'This rate has expired' : 'No rate available' }}</h3>
+            <hr class="flw-rule">
+            <p class="flw-text">{{ $quote['status'] === 'EXPIRED' ? 'Rates are held for 5 minutes. Get a new one to continue.' : $quote['message'] }}</p>
+        </div>
+        <a class="flw-btn flw-btn--primary flw-btn--block" href="{{ $startOverUrl() }}">Get a new rate</a>
     @elseif ($quote)
         <div class="flw-row">
-            <strong>Your rate</strong>
-            <span class="flw-muted" data-flw-countdown="{{ $quote['expires_in'] }}">Held for {{ intdiv((int) $quote['expires_in'], 60) }}:{{ str_pad((string) ((int) $quote['expires_in'] % 60), 2, '0', STR_PAD_LEFT) }}</span>
+            <h3 class="flw-title">Your rate</h3>
+            <p class="flw-countdown">Held for <strong data-flw-countdown="{{ $quote['expires_in'] }}">{{ intdiv((int) $quote['expires_in'], 60) }}:{{ str_pad((string) ((int) $quote['expires_in'] % 60), 2, '0', STR_PAD_LEFT) }}</strong></p>
         </div>
-        <dl>
-            <div><dt class="flw-muted">You sell</dt><dd>{{ $money($quote['base'], $quote['approved_quantity']) }}</dd></div>
-            <div><dt class="flw-muted">You get</dt><dd>{{ $money($quote['target'], $quote['total_value']) }}</dd></div>
-            <div style="grid-column: 1 / -1"><dt class="flw-muted">Rate</dt><dd>1 {{ $quote['base'] }} = {{ $quote['rate'] }} {{ $quote['target'] }}</dd></div>
+        <hr class="flw-rule">
+        <dl class="flw-dl">
+            <div><dt>You sell</dt><dd>{{ $money($quote['base'], $quote['approved_quantity']) }}</dd></div>
+            <div><dt>You get</dt><dd>{{ $money($quote['target'], $quote['total_value']) }}</dd></div>
+            <div><dt>Rate</dt><dd>1 {{ $quote['base'] }} = {{ $quote['rate'] }} {{ $quote['target'] }}</dd></div>
         </dl>
         @if ($quote['quantity'] !== null && $quote['approved_quantity'] !== null && $quote['approved_quantity'] < $quote['quantity'])
-            <p>Flutterwave approved {{ $money($quote['base'], $quote['approved_quantity']) }} of the {{ $money($quote['base'], $quote['quantity']) }} you asked for.</p>
+            <p class="flw-notice flw-notice--warning">Flutterwave approved {{ $money($quote['base'], $quote['approved_quantity']) }} of the {{ $money($quote['base'], $quote['quantity']) }} you asked for.</p>
         @endif
         @if ($panel['urls'])
-            <form method="POST" action="{{ $panel['urls']['trade'] }}" data-flw-trade>
+            <form method="POST" action="{{ $panel['urls']['trade'] }}" data-flw-trade class="flw-stack" style="gap: 16px">
                 @csrf
                 <input type="hidden" name="quote_id" value="{{ $quote['id'] }}">
-                <label>Note for your records
-                    <input name="narration" required maxlength="255" placeholder="Supplier payment" value="{{ old('narration') }}">
+                <label class="flw-field">
+                    <span class="flw-field__label">Note for your records</span>
+                    <input class="flw-input" name="narration" required maxlength="255" placeholder="Supplier payment" value="{{ old('narration') }}">
                 </label>
-                <label class="flw-check"><input type="checkbox" required> Sell {{ $money($quote['base'], $quote['approved_quantity']) }} for {{ $money($quote['target'], $quote['total_value']) }}. Trades can’t be undone.</label>
-                <button type="submit">Trade at this rate</button>
+                <label class="flw-checkbox"><input type="checkbox" required>@include('flutterwave::components.partials.check')<span>Sell {{ $money($quote['base'], $quote['approved_quantity']) }} for {{ $money($quote['target'], $quote['total_value']) }}. Trades can’t be undone.</span></label>
+                <button type="submit" class="flw-btn flw-btn--primary flw-btn--block">Trade at this rate</button>
             </form>
-            <a class="flw-muted" href="{{ $startOverUrl() }}">Get a different rate</a>
+            <a class="flw-link-btn flw-link-btn--quiet" href="{{ $startOverUrl() }}">Get a different rate</a>
         @endif
-        <p class="flw-error" data-flw-expired hidden>This rate has expired. <a href="{{ $startOverUrl() }}">Get a new one</a>.</p>
+        <p class="flw-notice flw-notice--error" data-flw-expired hidden>This rate has expired. <a href="{{ $startOverUrl() }}">Get a new one</a>.</p>
     @elseif (! $panel['urls'])
-        <p class="flw-muted">Add Route::flutterwaveAdmin() to your routes to request quotes here.</p>
+        <p class="flw-text">Add Route::flutterwaveAdmin() to your routes to request quotes here.</p>
     @else
-        <strong>Convert currency</strong>
-        <p class="flw-muted">Get a rate, then trade it within 5 minutes. Weekdays only, from USD 1,000 or its equivalent.</p>
-        <form method="POST" action="{{ $panel['urls']['quote'] }}" data-flw-quote>
+        <div class="flw-stack">
+            <h3 class="flw-title">Convert currency</h3>
+            <p class="flw-text">Get a rate, then trade it within 5 minutes. Weekdays only, from USD 1,000 or its equivalent.</p>
+        </div>
+        <hr class="flw-rule">
+        <form method="POST" action="{{ $panel['urls']['quote'] }}" data-flw-quote class="flw-stack" style="gap: 16px">
             @csrf
             <input type="hidden" name="base" value="{{ $panel['pairs'][0][0] ?? 'NGN' }}">
             <input type="hidden" name="target" value="{{ $panel['pairs'][0][1] ?? 'USD' }}">
-            <label>Convert
-                <select data-flw-pair>
-                    @foreach ($panel['pairs'] as [$from, $to])
-                        <option value="{{ $from }}/{{ $to }}" @selected(old('base') === $from && old('target') === $to)>{{ $from }} to {{ $to }}</option>
-                    @endforeach
-                </select>
+            <label class="flw-field">
+                <span class="flw-field__label">Convert</span>
+                <span class="flw-select">
+                    <select class="flw-input" data-flw-pair>
+                        @foreach ($panel['pairs'] as [$from, $to])
+                            <option value="{{ $from }}/{{ $to }}" @selected(old('base') === $from && old('target') === $to)>{{ $from }} to {{ $to }}</option>
+                        @endforeach
+                    </select>
+                    @include('flutterwave::components.partials.chevron')
+                </span>
             </label>
-            <label>Amount to sell
-                <input name="quantity" required inputmode="decimal" placeholder="2000000" value="{{ old('quantity') }}">
+            <label class="flw-field">
+                <span class="flw-field__label">Amount to sell</span>
+                <input class="flw-input" name="quantity" required inputmode="decimal" placeholder="2000000" value="{{ old('quantity') }}">
             </label>
-            <button type="submit">Get a rate</button>
+            <button type="submit" class="flw-btn flw-btn--primary flw-btn--block">Get a rate</button>
         </form>
     @endif
 </div>
@@ -107,7 +120,7 @@
             var deadline = Date.now() + parseInt(countdown.getAttribute('data-flw-countdown'), 10) * 1000;
             (function tick() {
                 var left = Math.max(0, Math.round((deadline - Date.now()) / 1000));
-                countdown.textContent = 'Held for ' + Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
+                countdown.textContent = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
 
                 if (left === 0) {
                     var form = root.querySelector('[data-flw-trade]');

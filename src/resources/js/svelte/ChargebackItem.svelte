@@ -1,6 +1,6 @@
 <script lang="ts">
     import { router } from '@inertiajs/svelte';
-    import { chargebackStatus, checkProof, firstError, formatDeadline, toneClasses } from './admin';
+    import { chargebackStatus, checkProof, firstError, formatDeadline } from './admin';
     import type { FlutterwaveChargeback, FlutterwaveChargebackPanel, FlutterwaveErrors } from './types';
 
     interface Props {
@@ -55,70 +55,62 @@
     }
 </script>
 
-<li class="grid gap-3 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
-    <div class="flex flex-wrap items-start justify-between gap-2">
-        <div class="grid gap-0.5">
-            <span class="text-lg font-semibold tabular-nums">{chargeback.amount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-            <span class="text-xs text-neutral-500 dark:text-neutral-400">{chargeback.tx_ref} · {chargeback.flw_ref}</span>
+<li>
+    <div class="flw-row">
+        <div class="flw-stack">
+            <span class="flw-amount">{chargeback.amount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+            <span class="flw-meta"><span>{chargeback.tx_ref}</span><span>{chargeback.flw_ref}</span></span>
         </div>
-        <span class="rounded-full px-2.5 py-0.5 text-xs font-medium {toneClasses[status.tone]}">{status.label}</span>
+        <span class="flw-pill" data-tone={status.tone}>{status.label}</span>
     </div>
 
     {#if chargeback.respond_within !== null}
-        <p class="text-sm {urgent ? 'font-medium text-red-700 dark:text-red-400' : 'text-neutral-600 dark:text-neutral-300'}">
+        <p class={urgent ? 'flw-urgent' : 'flw-text'}>
             {chargeback.respond_within > 0 ? `Respond within ${formatDeadline(chargeback.respond_within)}, or the customer is refunded automatically.` : 'The response deadline has passed.'}
         </p>
     {/if}
 
-    {#if chargeback.comment}
-        <p class="text-sm text-neutral-600 dark:text-neutral-300">Customer’s reason: {chargeback.comment}</p>
-    {/if}
+    {#if chargeback.comment}<p class="flw-text">Customer’s reason: {chargeback.comment}</p>{/if}
 
-    {#if done}
-        <p role="status" class="text-sm font-medium text-green-700 dark:text-green-400">{done}</p>
-    {/if}
+    {#if done}<p role="status" class="flw-notice flw-notice--success">{done}</p>{/if}
 
     {#if chargeback.urls && mode === 'idle' && !done}
-        <div class="flex flex-wrap gap-2">
-            <button type="button" class="rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200" onclick={() => (mode = 'decline')}>Dispute with proof</button>
-            <button type="button" class="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800" onclick={() => (mode = 'accept')}>Accept and refund</button>
+        <div class="flw-actions">
+            <button type="button" class="flw-btn flw-btn--primary flw-btn--sm" onclick={() => (mode = 'decline')}>Dispute with proof</button>
+            <button type="button" class="flw-btn flw-btn--outline flw-btn--sm" onclick={() => (mode = 'accept')}>Accept and refund</button>
         </div>
     {/if}
 
     {#if mode !== 'idle'}
-        <form class="grid gap-3 rounded-lg bg-neutral-50 p-3 dark:bg-neutral-900" onsubmit={submit}>
+        <form class="flw-panel" onsubmit={submit}>
             {#if mode === 'decline'}
-                <label class="grid gap-1 text-sm">
-                    <span class="font-medium">Evidence</span>
-                    <input type="file" accept={proofRules.types.map((type) => `.${type}`).join(',')} class="text-sm" onchange={pickFile} />
-                    <span class="text-xs text-neutral-500 dark:text-neutral-400">One JPEG, PNG or PDF under 8MB. Merge receipts, delivery notes and messages into one file.</span>
+                <label class="flw-field">
+                    <span class="flw-field__label">Evidence</span>
+                    <input type="file" class="flw-input" accept={proofRules.types.map((type) => `.${type}`).join(',')} onchange={pickFile} />
+                    <span class="flw-field__hint">One JPEG, PNG or PDF under 8MB. Merge receipts, delivery notes and messages into one file.</span>
                 </label>
             {/if}
-            <label class="grid gap-1 text-sm">
-                <span class="font-medium">{mode === 'accept' ? 'Why are you accepting it?' : 'What does your evidence show?'}</span>
-                <textarea bind:value={comment} rows="2" class="rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-950"></textarea>
+            <label class="flw-field{error ? ' has-error' : ''}">
+                <span class="flw-field__label">{mode === 'accept' ? 'Why are you accepting it?' : 'What does your evidence show?'}</span>
+                <textarea bind:value={comment} rows="2" class="flw-input"></textarea>
+                {#if error}<span role="alert" class="flw-field__error">{error}</span>{/if}
             </label>
-            {#if error}
-                <p role="alert" class="text-sm text-red-700 dark:text-red-400">{error}</p>
-            {/if}
-            <div class="flex flex-wrap gap-2">
-                <button type="submit" disabled={busy} class="rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900">
-                    {busy ? 'Sending…' : mode === 'accept' ? 'Accept and refund the customer' : 'Send dispute'}
+            <div class="flw-actions">
+                <button type="submit" disabled={busy} class="flw-btn {mode === 'accept' ? 'flw-btn--secondary' : 'flw-btn--primary'}">
+                    {#if busy}<span class="flw-btn__spinner" aria-hidden="true"></span>{/if}
+                    {busy ? 'Sending' : mode === 'accept' ? 'Accept and refund the customer' : 'Send dispute'}
                 </button>
-                <button type="button" class="rounded-md px-3 py-1.5 text-sm text-neutral-600 hover:underline dark:text-neutral-300" onclick={cancel}>Cancel</button>
+                <button type="button" class="flw-link-btn flw-link-btn--quiet" onclick={cancel}>Cancel</button>
             </div>
         </form>
     {/if}
 
     {#if chargeback.history.length}
-        <details class="text-sm">
-            <summary class="cursor-pointer text-neutral-500 dark:text-neutral-400">History</summary>
-            <ol class="mt-2 grid gap-1.5 border-l border-neutral-200 pl-3 dark:border-neutral-800">
+        <details class="flw-details">
+            <summary>History</summary>
+            <ol class="flw-timeline">
                 {#each chargeback.history as entry, index (index)}
-                    <li class="grid">
-                        <span>{entry.description}{entry.comment ? `: ${entry.comment}` : ''}</span>
-                        <span class="text-xs text-neutral-500 dark:text-neutral-400">{entry.date && new Date(entry.date).toLocaleString()}</span>
-                    </li>
+                    <li>{entry.description}{entry.comment ? `: ${entry.comment}` : ''} <span class="flw-muted">{entry.date && new Date(entry.date).toLocaleString()}</span></li>
                 {/each}
             </ol>
         </details>

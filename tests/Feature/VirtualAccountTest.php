@@ -63,7 +63,7 @@ it('renders the bank details with a countdown', function () {
         ->toContain('NGN 5,070.00')
         ->toContain('Please make a bank transfer to Tester FLW')
         ->toContain('Use your banking app.')
-        ->toContain('class="flutterwave-virtual-account checkout-box"')
+        ->toContain('class="flw flw-card flw-card--narrow flw-account flutterwave-virtual-account checkout-box"')
         ->toContain('data-countdown');
 
     preg_match('/data-expires-at="(\d+)"/', $html, $matches);

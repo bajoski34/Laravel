@@ -17,18 +17,11 @@ const props = defineProps<{
 
 const { open, ready, error } = useFlutterwaveCheckout();
 
-const defaultClass =
-    'inline-flex items-center justify-center rounded-md bg-orange-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-orange-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 disabled:cursor-not-allowed disabled:opacity-50';
 </script>
 
 <template>
-    <button
-        type="button"
-        :class="defaultClass"
-        :disabled="props.disabled || !ready"
-        :title="error?.message"
-        @click="open(props.config, { onSuccess: props.onSuccess, onClose: props.onClose })"
-    >
+    <button type="button" class="flw flw-btn flw-btn--primary" :disabled="props.disabled || !ready" :title="error?.message" @click="open(props.config, { onSuccess: props.onSuccess, onClose: props.onClose })">
+        <span v-if="!ready && !error" class="flw-btn__spinner" aria-hidden="true" />
         <slot>Pay now</slot>
     </button>
 </template>

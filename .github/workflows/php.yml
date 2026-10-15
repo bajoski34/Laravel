@@ -1,9 +1,14 @@
 name: Tests
 
 on:
+  # Skipped only when every changed file is listed here; a push that also touches code still runs.
   push:
     branches: [ "2.x", "master", "main" ]
+    paths-ignore:
+      - 'README.md'
   pull_request:
+    paths-ignore:
+      - 'README.md'
 
 permissions:
   contents: read

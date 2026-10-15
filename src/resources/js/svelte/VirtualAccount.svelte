@@ -21,7 +21,7 @@
         onExpired?: () => void;
         paidMessage?: string;
         expiredMessage?: string;
-        /** Replaces the default classes. */
+        /** Added to the wrapper. */
         class?: string;
         children?: Snippet;
     }
@@ -88,48 +88,39 @@
     }
 </script>
 
-<div class={className ?? 'grid max-w-sm gap-4 rounded-xl border border-neutral-200 p-5 dark:border-neutral-800'}>
-    <dl class="grid gap-3 transition-opacity" class:opacity-40={expired && !paid}>
-        <div>
-            <dt class="text-xs text-neutral-500 dark:text-neutral-400">Bank</dt>
-            <dd class="font-semibold">{account.bank_name}</dd>
-        </div>
-        <div>
-            <dt class="text-xs text-neutral-500 dark:text-neutral-400">Account number</dt>
-            <dd class="flex items-center gap-2">
-                <span bind:this={numberEl} class="text-2xl font-semibold tracking-wider tabular-nums">{account.account_number}</span>
-                <button
-                    type="button"
-                    disabled={expired || paid}
-                    class="rounded-md border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-100 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-800"
-                    onclick={copy}
-                >
-                    {copyLabel}
-                </button>
-            </dd>
-        </div>
-        {#if amount > 0}
-            <div>
-                <dt class="text-xs text-neutral-500 dark:text-neutral-400">Amount to send</dt>
-                <dd class="font-semibold">{account.currency ?? 'NGN'} {formatAmount(amount)}</dd>
-            </div>
-        {/if}
-    </dl>
+<div class="flw flw-card flw-card--narrow flw-account{expired && !paid ? ' is-expired' : ''}{className ? ` ${className}` : ''}">
+    <div class="flw-stack">
+        <h3 class="flw-title">Pay by bank transfer</h3>
+        <p class="flw-text">Send the exact amount to this account from your banking app.</p>
+    </div>
+    <hr class="flw-rule" />
 
-    {#if account.note}
-        <p class="text-sm">{account.note}</p>
-    {/if}
+    <div class="flw-account__details flw-stack" style="gap: 16px">
+        <div class="flw-field">
+            <span class="flw-field__label">Account number</span>
+            <div class="flw-copyfield flw-account__number">
+                <input bind:this={numberEl} class="flw-input" readonly value={account.account_number} aria-label="Account number" />
+                <button type="button" disabled={expired || paid} class="flw-copyfield__btn" onclick={copy}>{copyLabel}</button>
+            </div>
+        </div>
+        <dl class="flw-dl">
+            <div><dt>Bank</dt><dd>{account.bank_name}</dd></div>
+            {#if amount > 0}<div><dt>Amount to send</dt><dd>{account.currency ?? 'NGN'} {formatAmount(amount)}</dd></div>{/if}
+        </dl>
+        {#if account.note}<p class="flw-muted">{account.note}</p>{/if}
+    </div>
 
     {@render children?.()}
 
-    <div aria-live="polite" class="text-sm">
+    <div aria-live="polite">
         {#if paid}
-            <p class="font-medium text-green-700 dark:text-green-400">{paidMessage}</p>
+            <p class="flw-notice flw-notice--success">{paidMessage}</p>
         {:else if expired}
-            <p class="text-red-700 dark:text-red-400">{expiredMessage}</p>
+            <p class="flw-notice flw-notice--error">{expiredMessage}</p>
         {:else if secondsLeft !== null}
-            <p class="text-neutral-500 dark:text-neutral-400">
-                Expires in <span class="tabular-nums">{formatDuration(secondsLeft)}</span>
+            <p class="flw-countdown">
+                {#if pollInterval > 0}<span class="flw-ring" aria-hidden="true"></span>{/if}
+                Expires in <strong>{formatDuration(secondsLeft)}</strong>
                 {#if pollInterval > 0}· We’ll update this page once your transfer arrives.{/if}
             </p>
         {/if}

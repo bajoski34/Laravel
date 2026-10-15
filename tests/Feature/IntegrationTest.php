@@ -17,7 +17,8 @@ it('renders a pay button', function () {
 
     expect($html)
         ->toContain('https://checkout.flutterwave.com/v3.js')
-        ->toContain('class="flutterwave-pay-button btn"')
+        ->toContain('class="flw flw-btn flw-btn--primary flutterwave-pay-button btn"')
+        ->toContain('/flutterwave/assets/flutterwave.css?v=')
         ->toContain('Buy now')
         ->toContain('FlutterwaveCheckout(config)');
 
@@ -105,9 +106,9 @@ it('publishes the inertia components for each framework', function (string $fram
 
     expect($published)->toBe($files);
 })->with([
-    'react' => ['react', ['admin.ts', 'chargebacks.tsx', 'checkout.ts', 'flutterwave-pay-button.tsx', 'format.ts', 'fx-converter.tsx', 'index.ts', 'types.ts', 'use-flutterwave-checkout.ts', 'virtual-account.tsx']],
-    'vue' => ['vue', ['ChargebackItem.vue', 'Chargebacks.vue', 'FlutterwavePayButton.vue', 'FxConverter.vue', 'VirtualAccount.vue', 'admin.ts', 'checkout.ts', 'format.ts', 'index.ts', 'types.ts', 'useFlutterwaveCheckout.ts']],
-    'svelte' => ['svelte', ['ChargebackItem.svelte', 'Chargebacks.svelte', 'FlutterwavePayButton.svelte', 'FxConverter.svelte', 'VirtualAccount.svelte', 'admin.ts', 'checkout.ts', 'format.ts', 'index.ts', 'types.ts']],
+    'react' => ['react', ['admin.ts', 'bank-select.tsx', 'beneficiaries.tsx', 'chargebacks.tsx', 'checkout.ts', 'flutterwave-css.d.ts', 'flutterwave-pay-button.tsx', 'flutterwave.css', 'fonts', 'format.ts', 'fx-converter.tsx', 'icons.tsx', 'index.ts', 'pager.tsx', 'refunds.tsx', 'settlements.tsx', 'transactions.tsx', 'types.ts', 'use-flutterwave-checkout.ts', 'virtual-account.tsx']],
+    'vue' => ['vue', ['BankSelect.vue', 'Beneficiaries.vue', 'ChargebackItem.vue', 'Chargebacks.vue', 'FlutterwavePayButton.vue', 'FxConverter.vue', 'Pager.vue', 'Refunds.vue', 'Settlements.vue', 'TransactionItem.vue', 'Transactions.vue', 'VirtualAccount.vue', 'admin.ts', 'checkout.ts', 'flutterwave-css.d.ts', 'flutterwave.css', 'fonts', 'format.ts', 'index.ts', 'types.ts', 'useFlutterwaveCheckout.ts']],
+    'svelte' => ['svelte', ['BankSelect.svelte', 'Beneficiaries.svelte', 'ChargebackItem.svelte', 'Chargebacks.svelte', 'FlutterwavePayButton.svelte', 'FxConverter.svelte', 'Pager.svelte', 'Refunds.svelte', 'Settlements.svelte', 'TransactionItem.svelte', 'Transactions.svelte', 'VirtualAccount.svelte', 'admin.ts', 'checkout.ts', 'flutterwave-css.d.ts', 'flutterwave.css', 'fonts', 'format.ts', 'index.ts', 'types.ts']],
 ]);
 
 it('refuses to publish more than one framework before changing anything', function () {

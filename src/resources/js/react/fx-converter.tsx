@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { type FormEvent, useEffect, useState } from 'react';
 import { firstError, formatMoney, fxStartOverUrl } from './admin';
 import { formatDuration, startCountdown, startPolling } from './format';
+import { Chevron, Notice } from './icons';
 import type { FlutterwaveErrors, FlutterwaveFxPanel, FlutterwaveFxQuote } from './types';
 
 interface Props {
@@ -11,13 +12,10 @@ interface Props {
     reloadOnly?: string[];
     /** How often to check a pending quote or trade, in milliseconds. */
     pollInterval?: number;
-    /** Replaces the default classes. */
+    /** Added to the wrapper. */
     className?: string;
 }
 
-const card = 'grid max-w-md gap-4 rounded-xl border border-neutral-200 p-5 dark:border-neutral-800';
-const primary = 'rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200';
-const quiet = 'text-sm text-neutral-600 underline-offset-2 hover:underline dark:text-neutral-300';
 
 export function FxConverter({ panel, reloadOnly, pollInterval = 3000, className }: Props) {
     const { quote, trade } = panel;
@@ -34,8 +32,8 @@ export function FxConverter({ panel, reloadOnly, pollInterval = 3000, className 
     const startOver = () => router.visit(fxStartOverUrl());
 
     return (
-        <div className={className ?? card}>
-            {panel.error && <p role="alert" className="text-sm text-red-700 dark:text-red-400">{panel.error}</p>}
+        <div className={`flw flw-card flw-card--narrow${className ? ` ${className}` : ''}`}>
+            {panel.error && <Notice text={panel.error} ok={false} />}
             {trade ? (
                 <TradeResult panel={panel} onStartOver={startOver} />
             ) : quote ? (
@@ -73,31 +71,36 @@ function QuoteRequest({ panel }: { panel: FlutterwaveFxPanel }) {
     };
 
     if (!panel.urls) {
-        return <p className="text-sm text-neutral-500 dark:text-neutral-400">Add Route::flutterwaveAdmin() to your routes to request quotes here.</p>;
+        return <p className="flw-text">Add Route::flutterwaveAdmin() to your routes to request quotes here.</p>;
     }
 
     return (
-        <form onSubmit={submit} className="grid gap-4">
-            <div className="grid gap-1">
-                <h3 className="text-base font-semibold">Convert currency</h3>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">Get a rate, then trade it within 5 minutes. Weekdays only, from USD 1,000 or its equivalent.</p>
+        <form onSubmit={submit} className="flw-stack" style={{ gap: 16 }}>
+            <div className="flw-stack">
+                <h3 className="flw-title">Convert currency</h3>
+                <p className="flw-text">Get a rate, then trade it within 5 minutes. Weekdays only, from USD 1,000 or its equivalent.</p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-[auto_1fr]">
-                <label className="grid gap-1 text-sm">
-                    <span className="font-medium">Convert</span>
-                    <select value={pair} onChange={(event) => setPair(event.target.value)} className="rounded-md border border-neutral-300 bg-white px-2 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950">
+            <hr className="flw-rule" />
+            <label className="flw-field">
+                <span className="flw-field__label">Convert</span>
+                <span className="flw-select">
+                    <select value={pair} onChange={(event) => setPair(event.target.value)} className="flw-input">
                         {panel.pairs.map(([from, to]) => (
                             <option key={`${from}/${to}`} value={`${from}/${to}`}>{from} to {to}</option>
                         ))}
                     </select>
-                </label>
-                <label className="grid gap-1 text-sm">
-                    <span className="font-medium">Amount of {base} to sell</span>
-                    <input inputMode="decimal" value={quantity} onChange={(event) => setQuantity(event.target.value.replace(/[^\d.]/g, ''))} placeholder="2000000" className="rounded-md border border-neutral-300 bg-white px-2 py-2 text-sm tabular-nums dark:border-neutral-700 dark:bg-neutral-950" />
-                </label>
-            </div>
-            {error && <p role="alert" className="text-sm text-red-700 dark:text-red-400">{error}</p>}
-            <button type="submit" disabled={busy} className={`${primary} w-fit`}>{busy ? 'Requesting…' : `Get a ${base} to ${target} rate`}</button>
+                    <Chevron />
+                </span>
+            </label>
+            <label className={`flw-field${error ? ' has-error' : ''}`}>
+                <span className="flw-field__label">Amount of {base} to sell</span>
+                <input inputMode="decimal" value={quantity} onChange={(event) => setQuantity(event.target.value.replace(/[^\d.]/g, ''))} placeholder="2000000" className="flw-input flw-num" />
+                {error && <span role="alert" className="flw-field__error">{error}</span>}
+            </label>
+            <button type="submit" disabled={busy} className="flw-btn flw-btn--primary flw-btn--block">
+                {busy && <span className="flw-btn__spinner" aria-hidden="true" />}
+                {busy ? 'Requesting' : `Get a ${base} to ${target} rate`}
+            </button>
         </form>
     );
 }
@@ -121,9 +124,10 @@ function QuoteStep({ panel, quote, onStartOver }: { panel: FlutterwaveFxPanel; q
 
     if (quote.pending) {
         return (
-            <div className="grid gap-2" aria-live="polite">
-                <h3 className="text-base font-semibold">Getting a rate…</h3>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">Flutterwave usually prices a quote within a few seconds. This updates by itself.</p>
+            <div className="flw-stack" style={{ gap: 10 }} aria-live="polite">
+                <h3 className="flw-title">Getting a rate</h3>
+                <hr className="flw-rule" />
+                <p className="flw-countdown"><span className="flw-ring" aria-hidden="true" />Flutterwave usually prices a quote within a few seconds. This updates by itself.</p>
             </div>
         );
     }
@@ -132,10 +136,11 @@ function QuoteStep({ panel, quote, onStartOver }: { panel: FlutterwaveFxPanel; q
 
     if (!quote.tradable || expired) {
         return (
-            <div className="grid gap-3" aria-live="polite">
-                <h3 className="text-base font-semibold">{expired ? 'This rate has expired' : 'No rate available'}</h3>
-                <p className="text-sm text-neutral-600 dark:text-neutral-300">{expired ? 'Rates are held for 5 minutes. Get a new one to continue.' : quote.message}</p>
-                <button type="button" onClick={onStartOver} className={`${primary} w-fit`}>Get a new rate</button>
+            <div className="flw-stack" style={{ gap: 14 }} aria-live="polite">
+                <h3 className="flw-title">{expired ? 'This rate has expired' : 'No rate available'}</h3>
+                <hr className="flw-rule" />
+                <p className="flw-text">{expired ? 'Rates are held for 5 minutes. Get a new one to continue.' : quote.message}</p>
+                <button type="button" onClick={onStartOver} className="flw-btn flw-btn--primary flw-btn--block">Get a new rate</button>
             </div>
         );
     }
@@ -172,29 +177,31 @@ function QuoteStep({ panel, quote, onStartOver }: { panel: FlutterwaveFxPanel; q
     };
 
     return (
-        <form onSubmit={submit} className="grid gap-4">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h3 className="text-base font-semibold">Your rate</h3>
-                {secondsLeft !== null && <span className="text-sm tabular-nums text-neutral-500 dark:text-neutral-400">Held for {formatDuration(secondsLeft)}</span>}
+        <form onSubmit={submit} className="flw-stack" style={{ gap: 16 }}>
+            <div className="flw-row">
+                <h3 className="flw-title">Your rate</h3>
+                {secondsLeft !== null && <p className="flw-countdown">Held for <strong>{formatDuration(secondsLeft)}</strong></p>}
             </div>
-            <dl className="grid grid-cols-2 gap-3">
-                <div><dt className="text-xs text-neutral-500 dark:text-neutral-400">You sell</dt><dd className="font-semibold tabular-nums">{sell}</dd></div>
-                <div><dt className="text-xs text-neutral-500 dark:text-neutral-400">You get</dt><dd className="font-semibold tabular-nums">{get}</dd></div>
-                <div className="col-span-2"><dt className="text-xs text-neutral-500 dark:text-neutral-400">Rate</dt><dd className="tabular-nums">1 {quote.base} = {quote.rate} {quote.target}</dd></div>
+            <hr className="flw-rule" />
+            <dl className="flw-dl">
+                <div><dt>You sell</dt><dd>{sell}</dd></div>
+                <div><dt>You get</dt><dd>{get}</dd></div>
+                <div><dt>Rate</dt><dd>1 {quote.base} = {quote.rate} {quote.target}</dd></div>
             </dl>
-            {trimmed && <p className="rounded-md bg-amber-50 p-2 text-sm text-amber-900 dark:bg-amber-400/10 dark:text-amber-300">Flutterwave approved {sell} of the {formatMoney(quote.base, quote.quantity)} you asked for.</p>}
+            {trimmed && <p className="flw-notice flw-notice--warning">Flutterwave approved {sell} of the {formatMoney(quote.base, quote.quantity)} you asked for.</p>}
             {panel.urls && (
                 <>
-                    <label className="grid gap-1 text-sm">
-                        <span className="font-medium">Note for your records</span>
-                        <input value={narration} onChange={(event) => { setNarration(event.target.value); setConfirming(false); }} placeholder="Supplier payment" className="rounded-md border border-neutral-300 bg-white px-2 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950" />
+                    <label className={`flw-field${error ? ' has-error' : ''}`}>
+                        <span className="flw-field__label">Note for your records</span>
+                        <input value={narration} onChange={(event) => { setNarration(event.target.value); setConfirming(false); }} placeholder="Supplier payment" className="flw-input" />
+                        {error && <span role="alert" className="flw-field__error">{error}</span>}
                     </label>
-                    {error && <p role="alert" className="text-sm text-red-700 dark:text-red-400">{error}</p>}
-                    {confirming && <p className="text-sm font-medium">Sell {sell} for {get}? Trades can’t be undone.</p>}
-                    <div className="flex flex-wrap items-center gap-3">
-                        <button type="submit" disabled={busy} className={primary}>{busy ? 'Trading…' : confirming ? 'Confirm trade' : 'Trade at this rate'}</button>
-                        <button type="button" onClick={confirming ? () => setConfirming(false) : onStartOver} className={quiet}>{confirming ? 'Back' : 'Get a different rate'}</button>
-                    </div>
+                    {confirming && <p className="flw-notice flw-notice--info">Sell {sell} for {get}? Trades can’t be undone.</p>}
+                    <button type="submit" disabled={busy} className="flw-btn flw-btn--primary flw-btn--block">
+                        {busy && <span className="flw-btn__spinner" aria-hidden="true" />}
+                        {busy ? 'Trading' : confirming ? 'Confirm trade' : 'Trade at this rate'}
+                    </button>
+                    <button type="button" onClick={confirming ? () => setConfirming(false) : onStartOver} className="flw-link-btn flw-link-btn--quiet">{confirming ? 'Back' : 'Get a different rate'}</button>
                 </>
             )}
         </form>
@@ -207,17 +214,18 @@ function TradeResult({ panel, onStartOver }: { panel: FlutterwaveFxPanel; onStar
     const failed = trade.status === 'FAILED';
 
     return (
-        <div className="grid gap-3" aria-live="polite">
-            <h3 className="text-base font-semibold">{settled ? 'Trade settled' : failed ? 'Trade failed' : 'Trade in progress…'}</h3>
-            <p className={`text-sm ${failed ? 'text-red-700 dark:text-red-400' : 'text-neutral-600 dark:text-neutral-300'}`}>
-                {settled
-                    ? `Sold ${formatMoney(trade.base, trade.sold)} for ${formatMoney(trade.target, trade.bought)}${trade.recipient ? `, paid to ${trade.recipient}` : ''}.`
-                    : failed
-                      ? trade.message ?? 'Flutterwave couldn’t complete the trade.'
-                      : `Selling ${formatMoney(trade.base, trade.sold)} for ${formatMoney(trade.target, trade.bought)}. This updates by itself.`}
-            </p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Reference {trade.reference ?? trade.id}</p>
-            {!trade.pending && <button type="button" onClick={onStartOver} className={`${primary} w-fit`}>Start another conversion</button>}
+        <div className="flw-stack" style={{ gap: 14 }} aria-live="polite">
+            <h3 className="flw-title">{settled ? 'Trade settled' : failed ? 'Trade failed' : 'Trade in progress'}</h3>
+            <hr className="flw-rule" />
+            {settled ? (
+                <p className="flw-text">Sold {formatMoney(trade.base, trade.sold)} for <strong>{formatMoney(trade.target, trade.bought)}</strong>{trade.recipient ? `, paid to ${trade.recipient}` : ''}.</p>
+            ) : failed ? (
+                <p className="flw-notice flw-notice--error">{trade.message ?? 'Flutterwave couldn’t complete the trade.'}</p>
+            ) : (
+                <p className="flw-countdown"><span className="flw-ring" aria-hidden="true" />Selling {formatMoney(trade.base, trade.sold)} for {formatMoney(trade.target, trade.bought)}. This updates by itself.</p>
+            )}
+            <p className="flw-muted">Reference {trade.reference ?? trade.id}</p>
+            {!trade.pending && <button type="button" onClick={onStartOver} className="flw-btn flw-btn--primary flw-btn--block">Start another conversion</button>}
         </div>
     );
 }
