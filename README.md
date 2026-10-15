@@ -25,17 +25,20 @@ That one line creates a hosted checkout supporting cards, bank transfer, USSD, m
 | | |
 |---|---|
 | **Checkout** | Hosted payment links, inline modal, drop-in `<x-flutterwave-button>` |
+| **Inertia** | Inertia-aware redirects, plus publishable React, Vue and Svelte components for checkout and bank transfer payments |
 | **Verification** | `Flutterwave::isSuccessful($id, $amount, $currency)` in one call |
 | **Webhooks** | Route, signature check and Laravel events wired up for you |
 | **Transfers** | Single and bulk payouts to banks and mobile money, fees, FX rates |
 | **Stablecoins** | Send USDC, USDT and RLUSD on Solana, Ethereum, Base and Polygon; fund from fiat |
 | **Banks** | Bank lists, branches, account-name resolution |
 | **Subscriptions** | Payment plans and subscription management |
-| **Virtual accounts** | Static and dynamic account numbers for bank transfer collections |
+| **Virtual accounts** | Static accounts, plus a drop-in `<x-flutterwave-virtual-account>` component for one-off bank transfer payments |
 | **Split payments** | Subaccounts for marketplaces |
 | **Refunds** | Full and partial refunds, refund lookups |
 | **Balances & settlements** | Wallet balances and settlement history |
-| **Artisan** | `flutterwave:install`, `flutterwave:verify`, `flutterwave:banks` |
+| **Chargebacks** | List disputes, accept them, or decline with uploaded proof |
+| **FX trades** | Request a quote and convert NGN, GHS and USD at the quoted rate |
+| **Artisan** | Verify payments, check balances, look up banks, accounts and card BINs, create payment links and replay webhooks locally |
 
 Supports **PHP 8.1+** and **Laravel 9, 10, 11, 12 and 13**.
 
@@ -85,6 +88,99 @@ Need just the URL (for an API or mobile app)? Use `Flutterwave::checkout([...])`
 ```
 
 Supported attributes: `amount`, `email`, `currency`, `name`, `phone`, `tx-ref`, `redirect-url`, `payment-options`, `payment-plan`, `:meta`, `:customizations`, `:subaccounts`.
+
+### Inertia (React, Vue, Svelte)
+
+`Flutterwave::redirect()` works as-is from an Inertia form post. It sees the `X-Inertia` header and returns the response that makes Inertia do a full page visit to the hosted checkout, so the browser doesn't block a cross-domain XHR redirect.
+
+For the inline modal, build the config on the server and pass it as a prop. That way the amount and `tx_ref` can't be changed in the browser:
+
+```php
+return Inertia::render('Checkout', [
+    'checkout' => Flutterwave::inlineConfig(['amount' => $order->total, 'email' => $user->email, 'tx_ref' => 'ORDER-'.$order->id]),
+]);
+```
+
+#### Components for React, Vue and Svelte
+
+Publish the components for your frontend:
+
+```shell
+php artisan flutterwave:install --react   # or --vue (Vue 3) or --svelte (Svelte 5)
+```
+
+This copies TypeScript files into `resources/js/components/flutterwave`. They're yours to restyle, and they don't add an npm dependency. They use Tailwind classes, work with Inertia 1, 2 and 3, and are safe to render with Inertia SSR. You get the same three pieces in each framework:
+
+- **`FlutterwavePayButton`** opens the inline modal using the config from `inlineConfig()`. It loads Flutterwave's script for you, once.
+- **`VirtualAccount`** shows a `dynamicFor()` account with a copy button and a countdown. It checks for the payment until your webhook listener marks the order paid.
+- **`useFlutterwaveCheckout()`** (React and Vue) and `openCheckout(config, callbacks)` (all three) are for building your own checkout UI.
+
+Pass both props from your controller:
+
+```php
+return Inertia::render('Checkout', [
+    'order' => $order->only('id', 'paid'),
+    'checkout' => Flutterwave::inlineConfig(['amount' => $order->total, 'email' => $order->email, 'tx_ref' => 'ORDER-'.$order->id]),
+    'account' => Flutterwave::virtualAccounts()->dynamicFor($order->email, $order->total, 'ORDER-'.$order->id),
+]);
+```
+
+**React**
+
+```tsx
+import { router } from '@inertiajs/react';
+import { FlutterwavePayButton, VirtualAccount } from '@/components/flutterwave';
+
+<FlutterwavePayButton config={checkout}>Pay with card</FlutterwavePayButton>
+
+<VirtualAccount account={account} paid={order.paid} reloadOnly={['order']} onPaid={() => router.visit(`/orders/${order.id}`)} />
+```
+
+**Vue**
+
+```vue
+<script setup lang="ts">
+import { router } from '@inertiajs/vue3';
+import { FlutterwavePayButton, VirtualAccount, type FlutterwaveCheckoutConfig, type FlutterwaveVirtualAccount } from '@/components/flutterwave';
+
+defineProps<{ order: { id: number; paid: boolean }; checkout: FlutterwaveCheckoutConfig; account: FlutterwaveVirtualAccount }>();
+</script>
+
+<template>
+    <FlutterwavePayButton :config="checkout">Pay with card</FlutterwavePayButton>
+
+    <VirtualAccount :account="account" :paid="order.paid" :reload-only="['order']" @paid="router.visit(`/orders/${order.id}`)" />
+</template>
+```
+
+**Svelte**
+
+```svelte
+<script lang="ts">
+    import { router } from '@inertiajs/svelte';
+    import { FlutterwavePayButton, VirtualAccount } from '@/components/flutterwave';
+
+    let { order, checkout, account } = $props();
+</script>
+
+<FlutterwavePayButton config={checkout}>Pay with card</FlutterwavePayButton>
+
+<VirtualAccount {account} paid={order.paid} reloadOnly={['order']} onPaid={() => router.visit(`/orders/${order.id}`)} />
+```
+
+**Card payments.** By default, Flutterwave redirects to your `FLW_REDIRECT_URL` after payment, and that route verifies the payment on the server. To stay on the page, pass `onSuccess` (`@success` in Vue) and send the payment to your server to verify. Flutterwave ignores callbacks when a redirect URL is set, so the component drops the redirect URL when you pass `onSuccess`. `onClose` (`@close`) runs when the customer closes the modal:
+
+```tsx
+<FlutterwavePayButton
+    config={checkout}
+    onSuccess={(payment) => router.post(`/orders/${order.id}/verify`, { transaction_id: payment.transaction_id })}
+    onClose={(incomplete) => incomplete && toast('Payment cancelled')}
+/>
+```
+
+**Bank transfers.** While `paid` is false, `VirtualAccount` reloads the `reloadOnly` props every 5 seconds (`pollInterval`). It pauses while the tab is hidden and stops once the account expires. Your `ChargeCompleted` listener updates the order when the transfer arrives, and the next reload picks that up. Set `pollInterval` to `0` to turn checking off. It also takes `onExpired` (`@expired` in Vue), `paidMessage` and `expiredMessage`; Vue also has `#paid` and `#expired` slots.
+
+**Styling.** In React and Svelte, `class`/`className` replaces the default classes. In Vue, `class` is merged onto the root element, as usual for Vue.
 
 ### Confirming a payment
 
@@ -142,6 +238,8 @@ Event::listen(function (ChargeCompleted $event) {
 | `ChargeCompleted` | A payment completed. `$event->transaction` is the API-verified transaction |
 | `TransferCompleted` | A payout succeeded or failed |
 | `SubscriptionCancelled` | A customer's subscription was cancelled |
+| `QuoteCompleted` | An FX quote changed status. `$event->isReady()` when you can trade it |
+| `ChargebackUpdated` | A chargeback was raised, accepted, declined or lost. `$event->needsResponse()` for new ones |
 
 Change the path, add middleware or turn the route off under `webhook` in `config/flutterwave.php`.
 
@@ -167,6 +265,17 @@ Flutterwave::transfers()->retry($id);
 ```
 
 Don't know a bank code? Run `php artisan flutterwave:banks NG --search=access`.
+
+`resolveAccount()` works for Nigerian and Ghanaian bank accounts and Ghanaian mobile money numbers. Before a wallet-to-wallet transfer, use `resolveMerchant()` to check a Flutterwave merchant ID:
+
+```php
+Flutterwave::banks()->resolveAccount('0690000032', '044');                // Nigerian bank account
+Flutterwave::banks()->resolveAccount('0031625807099', 'GH190101', 'GH');  // Ghanaian bank account
+Flutterwave::banks()->resolveAccount('233542773934', 'MTN', 'GH');        // Ghanaian mobile money: phone number + provider code
+Flutterwave::banks()->resolveMerchant('7981223');                         // Flutterwave merchant ID
+```
+
+With test keys, only [Flutterwave's test accounts](https://developer.flutterwave.com/docs/testing#bank-accounts) resolve. Real account numbers return an error.
 
 ## Stablecoins
 
@@ -229,6 +338,85 @@ $account = Flutterwave::virtualAccounts()->create([
 $account['data']['account_number']; // your customer pays into this account
 ```
 
+### Dynamic accounts for one-off payments
+
+A dynamic account is a single-use NGN or GHS account number for one payment. It expires after an hour by default. Drop the component into your checkout page:
+
+```blade
+<x-flutterwave-virtual-account
+    :amount="$order->total"
+    :email="$order->customer_email"
+    :tx-ref="'ORDER-'.$order->id"
+    :expires="1800"
+    narration="Jane's Store"
+/>
+```
+
+It shows the bank name, the account number with a copy button, the amount to send and a live countdown. When the account expires, it shows a message instead. Anything between the tags is rendered under the account details, and `class` is merged onto the wrapper. The default styles have zero specificity, so your own CSS always wins.
+
+- **Always pass a `tx-ref`.** The account is cached for that reference until it expires, so a page refresh shows the same account number. Without a `tx-ref`, every render creates a new account.
+- Optional attributes: `currency` (`NGN` or `GHS`), `expires` (seconds: 60 up to 2 months for NGN, 48 hours for GHS), `firstname`, `lastname`, `phone`, `narration`, `bank-code` and `expired-message`.
+- Already created the account in a controller? Pass the response instead, and no API call is made: `<x-flutterwave-virtual-account :account="$response" />`.
+
+Using Inertia, or creating the account in a controller? `dynamicFor()` uses the same per-`tx_ref` caching as the component and returns a flat array that works as a prop:
+
+```php
+$account = Flutterwave::virtualAccounts()->dynamicFor($order->email, $order->total, 'ORDER-'.$order->id, ['expires' => 1800]);
+
+// ['account_number' => '9519802749', 'bank_name' => 'Flutterwave MFB', 'amount' => '5070.00', 'currency' => 'NGN',
+//  'tx_ref' => 'ORDER-42', 'expires_at' => '2026-10-14T12:30:00+00:00', 'expires_in' => 1800, 'note' => '...', ...]
+
+return Inertia::render('Checkout', ['account' => $account]);
+```
+
+Base your frontend countdown on `expires_in`, not `expires_at`, so a wrong clock on the customer's device doesn't matter. The Blade component also accepts this array: `<x-flutterwave-virtual-account :account="$account" />`. For a single uncached account, use `dynamic($email, $amount, $options)`, which returns Flutterwave's raw response.
+
+When the customer pays, Flutterwave sends a `charge.completed` webhook with `payment_type: bank_transfer`, so your existing `ChargeCompleted` listener handles it. NGN accounts reverse an underpayment, and also any amount paid over the total. GHS accounts reject anything that isn't the exact amount.
+
+## Chargebacks
+
+When a customer disputes a payment with their bank, respond before the due date: 10 working hours for local transactions, 30 for international ones. If you don't, the chargeback is lost and the customer is refunded.
+
+```php
+$open = Flutterwave::chargebacks()->all(['status' => 'initiated']);
+Flutterwave::chargebacks()->find($flwRef);  // one chargeback with its history
+
+// The customer didn't get what they paid for: refund them
+Flutterwave::chargebacks()->accept($chargebackId, 'Order was never shipped.');
+
+// You have evidence they did: upload it and dispute
+Flutterwave::chargebacks()->declineWithProof($chargebackId, 'Delivered on 3 October and signed for.', $request->file('proof'));
+```
+
+Proof must be one JPEG, PNG or PDF file under 8MB, so merge multiple documents into one first. `declineWithProof()` accepts a file path or an uploaded file, and checks it before sending anything. To do it in two steps, call `uploadProof($file)` to get a proof link, then `decline($id, $comment, $proofLink)`.
+
+To have Flutterwave notify you by webhook instead of email, ask them to enable chargeback webhooks. Each one fires `ChargebackUpdated`:
+
+```php
+Event::listen(function (ChargebackUpdated $event) {
+    if ($event->needsResponse()) {
+        Notification::route('mail', 'disputes@shop.test')->notify(new ChargebackRaised($event->data));
+    }
+});
+```
+
+## FX trades
+
+Convert between currencies at a quoted rate. Supported pairs are NGN to USD, GHS to USD and USD to NGN. FX has to be enabled on your account, trades run on weekdays only, and the minimum is USD 1,000 or its equivalent.
+
+```php
+$quote = Flutterwave::fx()->quote('NGN', 'USD', 2_000_000, 'FX-ORDER-7');  // spend NGN 2,000,000 on dollars
+
+// When the quote is ready (usually seconds later), check the rate and trade it
+$ready = Flutterwave::fx()->findQuote($quote['data']['id'])['data'];
+// $ready['status'] === 'READY'; $ready['quote']['best_available_rate'], ['approved_quantity'], ['total_value']
+
+$trade = Flutterwave::fx()->tradeIfReady($ready['id'], 'Supplier payment');
+Flutterwave::fx()->findTrade($trade['data']['id']);  // NEW, PENDING, then SETTLED or FAILED
+```
+
+A quote is valid for 5 minutes and can only be traded once. `tradeIfReady()` re-checks the quote first, so an expired one fails with a clear message instead of at the API. `approved_quantity` can be lower than the amount you asked for, depending on liquidity and your account limits. Instead of polling, listen for `QuoteCompleted`, and for `TransferCompleted` when the trade settles.
+
 ## Split payments
 
 ```php
@@ -264,10 +452,38 @@ Flutterwave::transactions()->timeline($transactionId);
 
 Every method returns Flutterwave's JSON response as an array (`status`, `message`, `data` and, for lists, `meta`).
 
+## Artisan commands
+
+Everything the standalone [Flutterwave CLI](https://github.com/Flutterwave/CLI) does, using the keys already in your `.env`:
+
 ```shell
-php artisan flutterwave:verify 4975363          # by transaction id
-php artisan flutterwave:verify ORDER-42 --ref   # by tx_ref
+php artisan flutterwave:verify 4975363                  # transaction status by id
+php artisan flutterwave:verify ORDER-42 --ref           # ...or by tx_ref
+php artisan flutterwave:balance --currency=NGN          # wallet balances
+php artisan flutterwave:banks GH --search=ecobank       # bank codes
+php artisan flutterwave:branches 280                    # branches for a bank id
+php artisan flutterwave:resolve 0690000032 044          # account name lookup
+php artisan flutterwave:resolve 233542773934 MTN --country=GH   # Ghanaian bank or mobile money
+php artisan flutterwave:resolve 7981223 --merchant      # Flutterwave merchant ID
+php artisan flutterwave:bin 539983                      # card issuer, type and country
+php artisan flutterwave:rate --amount=100 --from=USD --to=NGN
+php artisan flutterwave:pay jane@example.com 100 --currency=NGN --open
+php artisan flutterwave:resend-webhook 4975363          # resend a failed webhook
+php artisan flutterwave:ping-webhook 4975363 http://localhost:8000/flutterwave/webhook
+
+php artisan flutterwave:chargebacks --status=initiated   # disputes waiting for your response
+php artisan flutterwave:chargebacks --ref=FLW-MOCK-c23b  # one chargeback and its history
+php artisan flutterwave:accept-chargeback 1599 --comment="Order was never shipped"
+php artisan flutterwave:decline-chargeback 1599 --proof=storage/disputes/1599.pdf --comment="Signed for on delivery"
+
+php artisan flutterwave:fx-quote NGN USD 2000000         # waits until the rate is ready
+php artisan flutterwave:fx-trade 570e21b4 --narration="Supplier payment"
+php artisan flutterwave:fx-status 08e27e03 --trade
 ```
+
+Commands that refund a customer or move money (`accept-chargeback`, `decline-chargeback` and `fx-trade`) show what will happen and ask before going ahead. Pass `--force` to run them from scripts or CI. Without it, they change nothing when there's no terminal to ask in.
+
+`flutterwave:ping-webhook` fetches the real transaction (or transfer, with `--event=transfer`) and posts it to your local URL as a signed `charge.completed` or `transfer.completed` webhook, so you can test your listeners without exposing localhost. The URL defaults to this app's webhook route, and the signature uses `FLW_SECRET_HASH` unless you pass `--hash`.
 
 ## Error handling
 
@@ -305,7 +521,7 @@ Http::fake([
 $this->post('/pay')->assertRedirect('https://checkout.test');
 ```
 
-To test your webhook listeners, post to `/flutterwave/webhook` with a `verif-hash` header equal to your `FLW_SECRET_HASH`.
+To test your webhook listeners, post to `/flutterwave/webhook` with a `verif-hash` header equal to your `FLW_SECRET_HASH`. Or run `php artisan flutterwave:ping-webhook {transaction-id}` against your dev server.
 
 ## Customising
 

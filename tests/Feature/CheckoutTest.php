@@ -5,6 +5,7 @@ use Flutterwave\Payments\Exception\InvalidArgument;
 use Flutterwave\Payments\Facades\Flutterwave;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Route;
 
 it('creates a hosted payment link from just an amount and email', function () {
     Http::fake([FLW_API.'payments' => Http::response([
@@ -33,6 +34,27 @@ it('redirects to the hosted checkout', function () {
     $response = Flutterwave::redirect(['amount' => 100, 'email' => 'jane@example.com']);
 
     expect($response->getTargetUrl())->toBe('https://checkout.test/pay');
+});
+
+it('tells inertia to do a full page visit to the hosted checkout', function () {
+    Http::fake([FLW_API.'payments' => Http::response(['status' => 'success', 'data' => ['link' => 'https://checkout.test/pay']])]);
+    Route::post('/pay', fn () => Flutterwave::redirect(['amount' => 100, 'email' => 'jane@example.com']));
+
+    $this->post('/pay', [], ['X-Inertia' => 'true'])
+        ->assertStatus(409)
+        ->assertHeader('X-Inertia-Location', 'https://checkout.test/pay');
+
+    $this->post('/pay')->assertRedirect('https://checkout.test/pay');
+});
+
+it('returns the inline config as an array for inertia props', function () {
+    expect(Flutterwave::inlineConfig(['amount' => 100, 'email' => 'jane@example.com', 'tx_ref' => 'ORDER-1']))->toMatchArray([
+        'public_key' => 'FLWPUBK_TEST-public',
+        'amount' => 100,
+        'tx_ref' => 'ORDER-1',
+        'currency' => 'NGN',
+        'customer' => ['email' => 'jane@example.com'],
+    ]);
 });
 
 it('keeps the legacy render() API working', function () {

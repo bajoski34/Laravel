@@ -86,6 +86,38 @@ it('installs the config and env keys', function () {
     @unlink(config_path('flutterwave.php'));
 });
 
+it('publishes the inertia components for each framework', function (string $framework, array $files) {
+    $target = resource_path('js/components/flutterwave');
+    app()->useEnvironmentPath(sys_get_temp_dir().'/flw-missing-'.uniqid());
+
+    $this->artisan('flutterwave:install', ["--{$framework}" => true, '--no-interaction' => true])
+        ->expectsOutputToContain("Published the {$framework} components to resources/js/components/flutterwave")
+        ->expectsOutputToContain("from '@/components/flutterwave'")
+        ->assertSuccessful();
+
+    $published = array_map('basename', glob($target.'/*'));
+    sort($published);
+    expect($published)->toBe($files);
+
+    app('files')->deleteDirectory($target);
+    @unlink(config_path('flutterwave.php'));
+})->with([
+    'react' => ['react', ['checkout.ts', 'flutterwave-pay-button.tsx', 'format.ts', 'index.ts', 'types.ts', 'use-flutterwave-checkout.ts', 'virtual-account.tsx']],
+    'vue' => ['vue', ['FlutterwavePayButton.vue', 'VirtualAccount.vue', 'checkout.ts', 'format.ts', 'index.ts', 'types.ts', 'useFlutterwaveCheckout.ts']],
+    'svelte' => ['svelte', ['FlutterwavePayButton.svelte', 'VirtualAccount.svelte', 'checkout.ts', 'format.ts', 'index.ts', 'types.ts']],
+]);
+
+it('refuses to publish more than one framework before changing anything', function () {
+    @unlink(config_path('flutterwave.php'));
+
+    $this->artisan('flutterwave:install', ['--react' => true, '--vue' => true, '--no-interaction' => true])
+        ->expectsOutputToContain('Pick one of --react, --vue or --svelte')
+        ->assertFailed();
+
+    expect(file_exists(config_path('flutterwave.php')))->toBeFalse()
+        ->and(is_dir(resource_path('js/components/flutterwave')))->toBeFalse();
+});
+
 it('requires a public key for inline checkout', function () {
     config(['flutterwave.publicKey' => null]);
     app()->forgetInstance('flutterwave');

@@ -54,3 +54,36 @@ jobs:
           coverage: none
       - run: composer update --prefer-dist --no-progress --no-interaction
       - run: vendor/bin/pint --test
+
+  frontend:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # package.json pins the latest versions (Inertia 3); the other rows override them.
+          - { framework: react, label: 'Inertia 3, React 19' }
+          - { framework: react, label: 'Inertia 2, React 19', packages: '@inertiajs/react@2.3.28' }
+          - { framework: react, label: 'Inertia 1, React 18', packages: '@inertiajs/react@1.3.0 react@18.3.1 react-dom@18.3.1 @types/react@18.3.23' }
+          - { framework: vue, label: 'Inertia 3' }
+          - { framework: vue, label: 'Inertia 2', packages: '@inertiajs/vue3@2.3.28' }
+          - { framework: vue, label: 'Inertia 1', packages: '@inertiajs/vue3@1.3.0' }
+          - { framework: svelte, label: 'Inertia 3, Svelte 5' }
+          - { framework: svelte, label: 'Inertia 2, Svelte 5', packages: '@inertiajs/svelte@2.3.28' }
+          - { framework: svelte, label: 'Inertia 1, Svelte 5', packages: '@inertiajs/svelte@1.3.0' }
+
+    name: ${{ matrix.framework }} (${{ matrix.label }})
+
+    defaults:
+      run:
+        working-directory: tests/js
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - if: matrix.packages
+        run: npm install --no-save --no-audit --no-fund ${{ matrix.packages }}
+      - run: npm run typecheck:${{ matrix.framework }}

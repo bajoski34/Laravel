@@ -1,0 +1,1 @@
+{ "extends": "./tsconfig.base.json", "compilerOptions": { "jsx": "preserve" }, "include": ["build/vue/**/*.ts", "build/vue/**/*.vue"] }

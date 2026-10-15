@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\Facade;
 
 /**
  * @method static string checkout(array $data)
- * @method static \Illuminate\Http\RedirectResponse redirect(array $data)
+ * @method static \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response redirect(array $data)
+ * @method static array inlineConfig(array $data)
  * @method static string render(string $type, array $data)
  * @method static object use(string $service)
  * @method static string generateTransactionReference()
@@ -29,6 +30,9 @@ use Illuminate\Support\Facades\Facade;
  * @method static \Flutterwave\Payments\Services\Refunds refunds()
  * @method static \Flutterwave\Payments\Services\Settlements settlements()
  * @method static \Flutterwave\Payments\Services\Stablecoins stablecoins()
+ * @method static \Flutterwave\Payments\Services\Cards cards()
+ * @method static \Flutterwave\Payments\Services\Chargebacks chargebacks()
+ * @method static \Flutterwave\Payments\Services\Fx fx()
  * @method static \Flutterwave\Payments\Services\Webhooks webhooks()
  *
  * @see \Flutterwave\Payments\Flutterwave

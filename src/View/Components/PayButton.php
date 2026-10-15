@@ -53,7 +53,7 @@ class PayButton extends Component
             'subaccounts' => $this->subaccounts,
         ], static fn ($value) => $value !== null && $value !== []);
 
-        $config = json_decode(app('flutterwave')->render('inline', $payload), true);
+        $config = app('flutterwave')->inlineConfig($payload);
 
         if ($this->paymentOptions !== null) {
             $config['payment_options'] = $this->paymentOptions;

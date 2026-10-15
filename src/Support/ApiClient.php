@@ -10,6 +10,8 @@ use Flutterwave\Payments\Exception\InvalidArgument;
 use Flutterwave\Payments\Exception\NetworkConnection;
 use Flutterwave\Payments\Flutterwave;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -69,23 +71,54 @@ class ApiClient
      */
     public function send(string $method, string $uri, array $data = [], bool $throw = true): array
     {
+        // Only GET requests are retried: replaying a POST (e.g. a transfer)
+        // after a dropped connection could move money twice.
+        return $this->request(
+            $method,
+            $uri,
+            static fn (PendingRequest $request, string $url) => $request->send($method, $url, $method === 'GET' ? ['query' => $data] : ['json' => $data]),
+            $method === 'GET' ? $this->retries + 1 : 1,
+            $throw,
+        );
+    }
+
+    /**
+     * POST a file as multipart/form-data. Never retried, like every other POST.
+     *
+     * @throws FlutterwaveException when the API responds with an error and $throw is true
+     * @throws NetworkConnection when Flutterwave cannot be reached
+     */
+    public function upload(string $uri, string $field, string $contents, string $filename, bool $throw = true): array
+    {
+        return $this->request(
+            'POST',
+            $uri,
+            static fn (PendingRequest $request, string $url) => $request->attach($field, $contents, $filename)->post($url),
+            1,
+            $throw,
+        );
+    }
+
+    /**
+     * @param  callable(PendingRequest, string): Response  $send
+     */
+    private function request(string $method, string $uri, callable $send, int $attempts, bool $throw): array
+    {
         if ($this->secretKey === '') {
             throw new InvalidArgument('The Flutterwave secret key is missing. Add FLW_SECRET_KEY to your .env file.');
         }
 
         $url = $this->baseUrl.'/'.ltrim($uri, '/');
 
-        // Only GET requests are retried: replaying a POST (e.g. a transfer)
-        // after a dropped connection could move money twice.
-        $attempts = $method === 'GET' ? $this->retries + 1 : 1;
-
         for ($attempt = 1; ; $attempt++) {
             try {
-                $response = Http::withToken($this->secretKey)
-                    ->acceptJson()
-                    ->timeout($this->timeout)
-                    ->withUserAgent('Flutterwave-Laravel/'.Flutterwave::VERSION)
-                    ->send($method, $url, $method === 'GET' ? ['query' => $data] : ['json' => $data]);
+                $response = $send(
+                    Http::withToken($this->secretKey)
+                        ->acceptJson()
+                        ->timeout($this->timeout)
+                        ->withUserAgent('Flutterwave-Laravel/'.Flutterwave::VERSION),
+                    $url,
+                );
                 break;
             } catch (ConnectionException $e) {
                 if ($attempt >= $attempts) {

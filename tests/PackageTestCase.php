@@ -29,5 +29,8 @@ class PackageTestCase extends TestCase
         $app['config']->set('flutterwave.secretHash', 'my-secret-hash');
         $app['config']->set('flutterwave.redirectUrl', 'https://shop.test/flutterwave/payment/callback');
         $app['config']->set('flutterwave.retries', 1);
+
+        // Virtual accounts are cached per tx_ref; keep that in memory whatever the skeleton's .env says.
+        $app['config']->set('cache.default', 'array');
     }
 }

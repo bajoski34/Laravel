@@ -12,6 +12,9 @@ use Flutterwave\Payments\Helpers\Event;
 use Flutterwave\Payments\Services\Balances;
 use Flutterwave\Payments\Services\Banks;
 use Flutterwave\Payments\Services\Beneficiaries;
+use Flutterwave\Payments\Services\Cards;
+use Flutterwave\Payments\Services\Chargebacks;
+use Flutterwave\Payments\Services\Fx;
 use Flutterwave\Payments\Services\Modal;
 use Flutterwave\Payments\Services\PaymentPlans;
 use Flutterwave\Payments\Services\Refunds;
@@ -24,6 +27,7 @@ use Flutterwave\Payments\Services\Transfers;
 use Flutterwave\Payments\Services\VirtualAccounts;
 use Flutterwave\Payments\Services\Webhooks;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Psr\Log\LoggerInterface;
 
@@ -52,6 +56,9 @@ final class Flutterwave
         'refunds' => Refunds::class,
         'settlements' => Settlements::class,
         'stablecoins' => Stablecoins::class,
+        'cards' => Cards::class,
+        'chargebacks' => Chargebacks::class,
+        'fx' => Fx::class,
     ];
 
     private array $config;
@@ -82,11 +89,32 @@ final class Flutterwave
     /**
      * Start a hosted checkout and redirect the customer to it.
      *
+     * Inertia sends forms as XHR requests, which can't follow a redirect to
+     * another domain. For those requests this returns the 409 + X-Inertia-Location
+     * response that Inertia::location() would, so the browser does a full page visit.
+     *
      * @throws Exception
      */
-    public function redirect(array $data): RedirectResponse
+    public function redirect(array $data): RedirectResponse|Response
     {
-        return redirect()->away($this->checkout($data));
+        $link = $this->checkout($data);
+
+        if (request()->header('X-Inertia')) {
+            return new Response('', Response::HTTP_CONFLICT, ['X-Inertia-Location' => $link]);
+        }
+
+        return redirect()->away($link);
+    }
+
+    /**
+     * The inline checkout config as an array, e.g. to pass as an Inertia prop
+     * to FlutterwaveCheckout() on the frontend.
+     *
+     * @throws Exception
+     */
+    public function inlineConfig(array $data): array
+    {
+        return json_decode($this->render('inline', $data), true, 512, JSON_THROW_ON_ERROR);
     }
 
     /**
@@ -179,6 +207,21 @@ final class Flutterwave
     public function stablecoins(): Stablecoins
     {
         return $this->use('stablecoins');
+    }
+
+    public function cards(): Cards
+    {
+        return $this->use('cards');
+    }
+
+    public function chargebacks(): Chargebacks
+    {
+        return $this->use('chargebacks');
+    }
+
+    public function fx(): Fx
+    {
+        return $this->use('fx');
     }
 
     public function webhooks(): Webhooks

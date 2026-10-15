@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Flutterwave\Payments\Http\Controllers;
 
+use Flutterwave\Payments\Events\ChargebackUpdated;
 use Flutterwave\Payments\Events\ChargeCompleted;
+use Flutterwave\Payments\Events\QuoteCompleted;
 use Flutterwave\Payments\Events\SubscriptionCancelled;
 use Flutterwave\Payments\Events\TransferCompleted;
 use Flutterwave\Payments\Events\WebhookReceived;
@@ -54,6 +56,10 @@ class WebhookController extends Controller
                 TransferCompleted::dispatch($data);
             } elseif ($event === 'subscription.cancelled') {
                 SubscriptionCancelled::dispatch($data);
+            } elseif ($event === 'quote.completed') {
+                QuoteCompleted::dispatch($data);
+            } elseif (str_starts_with($event, 'chargeback.')) {
+                ChargebackUpdated::dispatch($event, $data);
             }
         }
 

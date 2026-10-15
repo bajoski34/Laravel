@@ -59,6 +59,16 @@ it('covers banks and account resolution', function () {
     assertCalled('POST', 'accounts/resolve', ['account_number' => '0690000032', 'account_bank' => '044']);
 });
 
+it('resolves ghanaian accounts, mobile money and merchant ids', function () {
+    Flutterwave::banks()->resolveAccount('0031625807099', 'GH190101', 'gh');
+    Flutterwave::banks()->resolveAccount('233542773934', 'MTN', 'GH');
+    Flutterwave::banks()->resolveMerchant('7981223');
+
+    assertCalled('POST', 'accounts/resolve', ['account_number' => '0031625807099', 'account_bank' => 'GH190101', 'country' => 'GH']);
+    assertCalled('POST', 'accounts/resolve', ['account_number' => '233542773934', 'account_bank' => 'MTN', 'country' => 'GH']);
+    assertCalled('POST', 'accounts/resolve', ['account_number' => '7981223', 'account_bank' => 'flutterwave']);
+});
+
 it('covers subaccounts', function () {
     $subaccounts = Flutterwave::subaccounts();
     $subaccounts->create(['business_name' => 'Vendor']);

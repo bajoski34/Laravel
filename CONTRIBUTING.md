@@ -64,7 +64,7 @@ Follow these steps when making a pull request to the library:
 1. Fork the repository and create your branch from master.
 2. For all types of changes (excluding documentation updates), add tests for the changes.
 3. If you are making a functionality change, update the docs to show how to use the new feature.
-4. Ensure all your tests pass.
+4. Ensure all your tests pass (`vendor/bin/pest`). If you change the components in `src/resources/js`, also run `npm ci && npm run typecheck` in `tests/js`. Keep the React, Vue and Svelte versions in step, and put framework-neutral code in `shared/`.
 5. Make sure your code lints.
 6. Write clear log messages for your commits. one-liners are fine for small changes, but bigger changes should have a more descriptive commit message (see sample below).
 7. Use present tense for commit messages, "Add feature" not "Added feature”.

@@ -1,0 +1,24 @@
+{
+    "private": true,
+    "description": "Type-checks the publishable components in src/resources/js, laid out the way vendor:publish copies them.",
+    "type": "module",
+    "scripts": {
+        "typecheck": "npm run typecheck:react && npm run typecheck:vue && npm run typecheck:svelte",
+        "typecheck:react": "node prepare.js react && tsc -p tsconfig.react.json",
+        "typecheck:vue": "node prepare.js vue && vue-tsc -p tsconfig.vue.json",
+        "typecheck:svelte": "node prepare.js svelte && svelte-check --tsconfig ./tsconfig.svelte.json --fail-on-warnings"
+    },
+    "devDependencies": {
+        "@inertiajs/react": "3.7.1",
+        "@inertiajs/svelte": "3.7.1",
+        "@inertiajs/vue3": "3.7.1",
+        "@types/react": "19.3.0",
+        "react": "19.3.0",
+        "react-dom": "19.3.0",
+        "svelte": "5.57.1",
+        "svelte-check": "4.7.6",
+        "typescript": "6.0.3",
+        "vue": "3.5.43",
+        "vue-tsc": "3.3.11"
+    }
+}

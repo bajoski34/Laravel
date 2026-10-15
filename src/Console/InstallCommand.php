@@ -10,7 +10,11 @@ class InstallCommand extends Command
 {
     public const REPOSITORY = 'https://github.com/bajoski34/Laravel';
 
-    protected $signature = 'flutterwave:install {--force : Overwrite an existing config/flutterwave.php}';
+    protected $signature = 'flutterwave:install
+        {--force : Overwrite files that were already published}
+        {--react : Also publish the React components for Inertia apps}
+        {--vue : Also publish the Vue 3 components for Inertia apps}
+        {--svelte : Also publish the Svelte 5 components for Inertia apps}';
 
     protected $description = 'Publish the Flutterwave config and add the required keys to your .env file';
 
@@ -23,6 +27,14 @@ class InstallCommand extends Command
 
     public function handle(): int
     {
+        $frameworks = array_values(array_filter(['react', 'vue', 'svelte'], fn (string $framework) => $this->option($framework)));
+
+        if (count($frameworks) > 1) {
+            $this->error('Pick one of --react, --vue or --svelte: they publish to the same folder.');
+
+            return self::FAILURE;
+        }
+
         $this->callSilent('vendor:publish', [
             '--tag' => 'flutterwave-config',
             '--force' => (bool) $this->option('force'),
@@ -30,6 +42,10 @@ class InstallCommand extends Command
         $this->info('Published config/flutterwave.php');
 
         $this->addEnvKeys();
+
+        if ($frameworks !== []) {
+            $this->publishComponents($frameworks[0]);
+        }
 
         if (config('flutterwave.webhook.enabled', true)) {
             $this->newLine();
@@ -46,6 +62,17 @@ class InstallCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    private function publishComponents(string $framework): void
+    {
+        $this->callSilent('vendor:publish', [
+            '--tag' => "flutterwave-{$framework}",
+            '--force' => (bool) $this->option('force'),
+        ]);
+
+        $this->info("Published the {$framework} components to resources/js/components/flutterwave");
+        $this->line("  import { FlutterwavePayButton, VirtualAccount } from '@/components/flutterwave';");
     }
 
     private function addEnvKeys(): void

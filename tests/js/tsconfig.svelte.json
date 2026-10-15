@@ -1,0 +1,1 @@
+{ "extends": "./tsconfig.base.json", "include": ["build/svelte/**/*.ts", "build/svelte/**/*.svelte"] }

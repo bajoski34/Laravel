@@ -25,13 +25,25 @@ class Banks extends Service
     }
 
     /**
-     * Resolve the account name for an account number and bank code.
+     * Resolve the account name for a Nigerian or Ghanaian bank account, or a
+     * Ghanaian mobile money number (pass the phone number and the provider's code).
+     *
+     * @see https://developer.flutterwave.com/docs/bank-account-verification-1
      */
-    public function resolveAccount(string $accountNumber, string $bankCode): array
+    public function resolveAccount(string $accountNumber, string $bankCode, ?string $country = null): array
     {
-        return $this->client->post('accounts/resolve', [
+        return $this->client->post('accounts/resolve', $this->filter([
             'account_number' => $accountNumber,
             'account_bank' => $bankCode,
-        ]);
+            'country' => $country === null ? null : strtoupper($country),
+        ]));
+    }
+
+    /**
+     * Resolve the business name behind a Flutterwave merchant ID, e.g. before a wallet-to-wallet transfer.
+     */
+    public function resolveMerchant(string $merchantId): array
+    {
+        return $this->resolveAccount($merchantId, 'flutterwave');
     }
 }
