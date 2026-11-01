@@ -13,12 +13,12 @@
         "@inertiajs/svelte": "3.9.1",
         "@inertiajs/vue3": "3.9.1",
         "@types/react": "19.3.0",
-        "react": "19.3.0",
-        "react-dom": "19.3.0",
-        "svelte": "5.57.2",
-        "svelte-check": "4.7.6",
+        "react": "19.3.1",
+        "react-dom": "19.3.1",
+        "svelte": "5.57.3",
+        "svelte-check": "4.7.7",
         "typescript": "6.0.3",
-        "vue": "3.5.43",
+        "vue": "3.5.44",
         "vue-tsc": "3.3.13"
     }
 }
